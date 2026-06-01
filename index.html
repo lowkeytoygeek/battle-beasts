@@ -1,16 +1,1264 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             background: #2A2420;
         }
+
+        .page {
+            background: #6B6158;
+            padding: 1.5rem;
+            border-radius: var(--border-radius-lg);
+            max-width: 768px;
+            margin: 0 auto;
+        }
+
+        a {
+            color: #eeaa00;
+        }
+
+        .bb-header {
+            text-align: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .bb-title {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 0.3em;
+            color: #A89F92;
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+
+        .bb-subtitle {
+            font-size: 20px;
+            font-weight: 500;
+            color: #E8E2D9;
+            letter-spacing: -0.01em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+        }
+
+        .series-header {
+            grid-column: 1 / -1;
+            font-family: var(--font-mono);
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            color: #A89F92;
+            text-transform: uppercase;
+            padding: 8px 2px 4px;
+            border-top: 0.5px solid #5A5148;
+            margin-top: 2px;
+        }
+
+            .series-header:first-child {
+                border-top: none;
+                margin-top: 0;
+                padding-top: 0;
+            }
+
+        .cell {
+            position: relative;
+            background: #4A4238;
+            border-radius: 3px;
+            overflow: hidden;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.12s ease;
+            background-image: var(--cell-noise);
+            background-size: 64px 64px;
+            image-rendering: pixelated;
+        }
+
+            .cell:hover {
+                transform: scale(1.06);
+                z-index: 10;
+            }
+
+        .canvas-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+        }
+
+        .cell canvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            display: block;
+        }
+
+        .cell .label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 3px 5px;
+            font-family: var(--font-mono);
+            font-size: 8px;
+            color: #E8E2D9;
+            background: rgba(30,24,20,0.9);
+            opacity: 0;
+            transition: opacity 0.12s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cell:hover .label {
+            opacity: 1;
+        }
+
+        .dots {
+            display: flex;
+            gap: 2px;
+            padding: 4px 5px 5px;
+            background: #3A3228;
+            flex-wrap: wrap;
+            min-height: 16px;
+            align-items: center;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .footer {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mode-badge {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            letter-spacing: 0.12em;
+            color: #A89F92;
+            text-transform: uppercase;
+        }
+
+        .footer-btn {
+            font-size: 11px;
+            color: #C8BFB0;
+            background: #5A5148;
+            border: 0.5px solid #7A6E62;
+            border-radius: var(--border-radius-md);
+            padding: 5px 14px;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            letter-spacing: 0.04em;
+        }
+
+            .footer-btn:hover {
+                background: #6B6158;
+            }
+
+        .color-swaps {
+            display: flex;
+            gap: 2px;
+            padding: 3px 5px 4px;
+            background: #2A2420;
+            flex-wrap: wrap;
+            opacity: 0;
+            transition: opacity 0.12s ease;
+        }
+
+        .cell:hover .color-swaps {
+            opacity: 1;
+        }
+
+        .color-swaps input[type=color] {
+            width: 14px;
+            height: 14px;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            border-radius: 2px;
+            background: none;
+            flex-shrink: 0;
+        }
+
+            .color-swaps input[type=color]::-webkit-color-swatch-wrapper {
+                padding: 0;
+            }
+
+            .color-swaps input[type=color]::-webkit-color-swatch {
+                border: 0.5px solid #5A5148;
+                border-radius: 2px;
+            }
+
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            color: #A89F92;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 0.5px solid #5A5148;
+        }
+
+        .palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            margin-bottom: 1.25rem;
+        }
+
+        .swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.1s ease;
+            flex-shrink: 0;
+        }
+
+            .swatch:hover {
+                transform: scale(1.2);
+                z-index: 10;
+            }
+
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 34px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2A2420;
+            color: #E8E2D9;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            padding: 4px 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .swatch:hover .tooltip {
+            display: block;
+        }
+
+        .sort-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 0.75rem;
+        }
+
+        .sort-label {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            color: #A89F92;
+            text-transform: uppercase;
+            margin-right: 4px;
+        }
+
+        .sort-btn {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            color: #C8BFB0;
+            background: #3A3228;
+            border: 0.5px solid #5A5148;
+            border-radius: 3px;
+            padding: 4px 10px;
+            cursor: pointer;
+        }
+
+            .sort-btn:hover {
+                background: #5A5148;
+            }
+
+            .sort-btn.active {
+                background: #5A5148;
+                color: #E8E2D9;
+                border-color: #8A7E72;
+            }
+
+        .recolor-bar {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .recolor-slot-btn {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            color: #C8BFB0;
+            background: #3A3228;
+            border: 0.5px solid #5A5148;
+            border-radius: 3px;
+            padding: 4px 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+            .recolor-slot-btn:hover {
+                background: #5A5148;
+            }
+
+            .recolor-slot-btn.active {
+                background: #5A5148;
+                color: #E8E2D9;
+                border-color: #8A7E72;
+            }
+
+        .recolor-slot-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 0.5px solid #8A7E72;
+            flex-shrink: 0;
+        }
+
+        .recolor-color-input {
+            width: 22px;
+            height: 22px;
+            border: 0.5px solid #5A5148;
+            padding: 0;
+            cursor: pointer;
+            border-radius: 3px;
+            background: none;
+            flex-shrink: 0;
+        }
+
+            .recolor-color-input::-webkit-color-swatch-wrapper {
+                padding: 0;
+            }
+
+            .recolor-color-input::-webkit-color-swatch {
+                border: none;
+                border-radius: 2px;
+            }
+
+        .recolor-apply-btn {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            color: #E8E2D9;
+            background: #5A4838;
+            border: 0.5px solid #8A6E52;
+            border-radius: 3px;
+            padding: 4px 10px;
+            cursor: pointer;
+        }
+
+            .recolor-apply-btn:hover {
+                background: #7A5838;
+            }
+
+
+        .tab-bar {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 0.9rem;
+        }
+
+        .tab-btn {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #A89F92;
+            background: none;
+            border: 0.5px solid transparent;
+            border-radius: 3px;
+            padding: 5px 16px;
+            cursor: pointer;
+        }
+
+            .tab-btn:hover {
+                color: #E8E2D9;
+            }
+
+            .tab-btn.active {
+                color: #E8E2D9;
+                border-color: #5A5148;
+                background: #3A3228;
+            }
+
+        .about-section {
+            padding: 0.5rem 0 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .about-block {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .about-heading {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            color: #A89F92;
+            text-transform: uppercase;
+            padding-bottom: 5px;
+            border-bottom: 0.5px solid #5A5148;
+        }
+
+        .about-section p {
+            font-size: 13px;
+            line-height: 1.65;
+            color: #C8BFB0;
+        }
     </style>
-    <title>Battle Beasts Pixel archive</title>
-  </head>
-  <body>
+
+    <title>Pixel Beasts - Battle Beasts pixel art catalog</title>
+</head>
+<body>
+    <div class="page">
+        <div class="bb-header">
+            <div class="bb-title">Battle Beasts · 1987-1988</div>
+            <div class="bb-subtitle">Pixel Beasts</div>
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="showTab('archive')">Catalog</button>
+                <button class="tab-btn" onclick="showTab('about')">About</button>
+            </div>
+        </div>
+
+        <div id="tab-archive">
+
+            <div class="sort-bar">
+                <span class="sort-label">sort</span>
+                <button class="sort-btn active" id="sort-0" onclick="setSorting(0)" title="Original order">0-9</button>
+                <button class="sort-btn" id="sort-1" onclick="setSorting(1)" title="Reverse order">9-0</button>
+
+                <button class="sort-btn" id="sort-2" onclick="setSorting(2)" title="Alphabetically">A–Z</button>
+                <button class="sort-btn" id="sort-3" onclick="setSorting(3)" title="Reverse alphabetically">Z-A</button>
+
+                <button class="sort-btn" id="sort-4" onclick="setSorting(4)" title="Skin color">skin color</button>
+                <button class="sort-btn" id="sort-5" onclick="setSorting(5)" title="Armor color">armor color</button>
+                <button class="sort-btn" id="sort-6" onclick="setSorting(6)" title="Air, land, sea">type</button>
+                <button class="sort-btn" id="sort-7" onclick="setSorting(7)" title="Hand design">hand</button>
+                <button class="sort-btn" id="sort-8" onclick="setSorting(8)" title="Randomize">random</button>
+
+            </div>
+
+            <div class="sort-bar">
+                <span class="sort-label">grid</span>
+                <button class="sort-btn" id="col-4" onclick="setColumns(4)">4</button>
+                <button class="sort-btn active" id="col-6" onclick="setColumns(6)">6</button>
+                <button class="sort-btn" id="col-8" onclick="setColumns(8)">8</button>
+                <button class="sort-btn" id="col-12" onclick="setColumns(12)">12</button>
+            </div>
+
+            <div class="grid" id="grid"></div>
+
+            <div class="footer"></div>
+
+            <div class="recolor-bar" id="recolor-bar">
+                <span class="sort-label">recolor all</span>
+                <div id="recolor-slots"></div>
+                <button class="recolor-apply-btn" id="recolor-apply-btn" onclick="applyAllPendingRecolors()">apply</button>
+                <button class="recolor-apply-btn" onclick="resetGlobalColors()" style="background:#3A3228;border-color:#5A5148;">reset</button>
+            </div>
+
+            <div class="section-label" id="stats"></div>
+
+        </div>
+        <!-- /tab-archive -->
+
+        <div id="tab-about" style="display:none;">
+            <div class="about-section">
+                <div class="about-block">
+                    <div class="about-heading">About this page</div>
+                    <p>
+                        I'm something of a collector of these 80s action figures and one day I had an idea to draw a retro pixel art image of one. A small experiment in simplification: how to present a figure in 32x32 pixels and include all the colors used in the original figure. Then I did another, and eventually all the rest of the series.
+                        Dozens of others somewhere have probably drawn similar pixel versions (because there's only so many ways to place pixels in 32x32 grid!) but I couldn't find one while searching. If you have, I assure you I was not copy-pasting. And I know that nowadays also AI could probably draw these kind of images instantly but I'm a dingus and wanted to do them by hand.
+                    </p>
+                    <p>Interactivity: you can play with the sort and recolor options if you like: move mouse on a character and click color swatches to recolor single character. At the end of the page there's also an option to recolor all at once.</p>
+                    <p>The other gimmick is to hold mousebutton on a character to reveal its weapon, but currently the actual images are missing.</p>
+                </div>
+
+                <div class="about-block">
+                    <div class="about-heading">Copyright</div>
+
+                    <p>All sprites are hand-drawn by me and this web page is a non-commercial fan project.<br />Original character design and trademark of Battle Beasts belongs to Takara / Hasbro.<br />Please don't use the images commercially.</p>
+                    <p>The code of this page was written AI assisted.</p>
+
+                </div>
+
+                <div class="about-block">
+                    <div class="about-heading">What are Battle Beasts anyway?</div>
+                    <p>Battle Beasts were a line of small armored animal action figures produced by Takara in Japan and distributed by Hasbro in the late 1980s. Each figure stood roughly 5 cm tall and came packaged with a weapon and a heat-sensitive rubsign on its chest revealing one of three elemental symbols: Fire, Water, or Wood. Later figures in the line replaced the rub sign with a translucent orb and were known as Laser Beasts (they had laser guns instead of melee weapons). A total of 112 figures were released.</p>
+                </div>
+
+
+                <div class="about-block">
+                    <div class="about-heading">Contact</div>
+
+                    <p>I don't expect visitors or feedback but if you are reading this and have questions you could find me via<br />lowkeytoygeek@proton.me or in <a href="https://www.instagram.com/lowkeytoygeek">Instagram</a>.</p>
+
+
+                </div>
+            </div>
+        </div><!-- /tab-about -->
+    </div>
+
     <script>
+        function showTab(name) {
+            document.getElementById('tab-archive').style.display = name === 'archive' ? '' : 'none';
+            document.getElementById('tab-about').style.display = name === 'about' ? '' : 'none';
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', (i === 0) === (name === 'archive'));
+            });
+        }
+
+        const beasts = [
+            { series: 1, indexNumber: 1, name: "Pirate Lion", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#fff9f0", "#001eff", "#ff0000", "#ffd000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACFUlEQVR4AeyWPVLDMBCFZRpKcoJ0FFyGw3ISOgq6nCCUqcR+K60i6y+yMwzDDB4/e/ft37NkBx7cLx//Au5aAf/uPLhnF3cJYCiwwdjA/C33zQLSoJezcxHLq9eZXlZEjQ2XzQK0N4PVcG55fnL+8yuIcduPfQJkDoOBDn88CLPvHAs4ej/V9iLb0Uu80WMsgKaNBvbk+vTk9NCoLVPHAk7LogVFI/8WaI3Z5aPYBquxHpZX3McCrAlF0eaNB1A54IByMbeylVhfxgKyXF3urDHbkCOlSo7mJmJsDAXQyNBsc5KtAI2g1XFvhBPVFyBPYlnL42EBXoYB48s7MUAuSPGsV+Ki0RcgCbbEYuopzyuncwxR4ihfKRDHOEmQUwg5y3qhqnMooMqGkG9+iUNxDcpJzPzZe1tAb8mE56l6zTUmOc14h68FxEReHuBO8beg0ZVlB41QoKSWHkCJ2FvteKkFxKIYd/5ylo0OHo1A8OorMWCRsrb1MLWAWM1bDKK7uukQESpvG8uz0Fi5VVZw6AGCV1+7Akx9Xsweg7pNYIiB4DlntdbLNY6mAArBKj/bv3yI5ay4LJc4vQB2iaaAMukn/T8ioFjSqRWZrNm/AvmA3J5Sd03aL+Da4y5rWgDfuaE30eLcezklPyWgbKi+/BClZmIrlwj5i8m/6pnfM6cE8A2XKBuWcfwyp+VPCWgVznK38r4BAAD//xJRoJkAAAAGSURBVAMAItr1QVRX2MMAAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 2, name: "Deer Stalker", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#7d3416", "#84d916", "#eb5215"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB9ElEQVR4AcSVvU3EQBCF1yRUcNcCDVAJKQVQAxJEIJGTUQApldAAKSFXAdHhT6fHPa/H+2MQnPQ0szNvZt6Obd1J+uffagG359u9tLuvWKtdJSAaGMVaRKwScPf6MeTNo1jOic7dAko3LeWi4cS6BVCkQVjgMfwedAvQqk+fU3IwVDn8VnQLoDGDrq73yUGMXC9WCWDI08OQHt8PwCe2BlUB92/bPcibf14eI/Kdhw+OrNirCrg5O3xyNBNo5SvHJ8cjwQI4qsVfQlWA3nJvwACgmPz8UUS1qpEtClADrVhFsvoKdHarGvXwnPtFAU6M/HHFCUS51tiiANbKDWnEMx4HDTxjgbhDcSxcasjTg174EUIBXkADFW5edoM+PWIjLwF8xeFwBl478r7/PckJMwFLRBXoZjq7LeWc5/5EQDScdXoBHL+ZcsTI6dxqJwJUxBssKIZtGeAcxPNOCPTIMRFAAYMhReskT66EFo7XTwSQ8MHuk8vBMJDHe84zARQvDc7XCxe4COeQ86+Cc45QQE766Vkidheb2af4JwJKF+gWwEvqK1dzYuR0zq22kMe7BJQGqHELR1xsswD9qy29oDRTTlxijmgLzQK80W/6TQKWblQS0lpTFdDaKBLTUlsVwHN1RIM85lx8z0V+VUBU1BOrcb8AAAD//3Vtr6UAAAAGSURBVAMAwnwFUCHReWYAAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 3, name: "Ferocious Tiger", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#ffe100", "#5e3a21", "#ff5289"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACA0lEQVR4AeyUvU0DQRCF9yiAmAyRuwJi2oCEhAwTUQMRpgACRBuU4QZogQaO+06883h2bvfWQkKWQDzP/9u3Y9+dpD/++xdwnBvoP1PvfzpRzvdE8cEb4MD7q1UP8CPyJbmDBZTIby4vsg3N9TcLsLfdvG4TEDk1NvJ2dpewypdskwAOmMgeniY3Gd8K2jXMe00CuvPUTVTPj5ObjL++Xe3yC7yqAFYJxLUnQskfq8PXX+9jxs6NieCjKMASsH5iwEFAfPhAsf0a6Fc+skUBDEAG8MHm9BozgkPBGAwftsYMGNLF/6KAiID12oPETo6aYtmIQzVsKIC1ARoE+93roJePbQL0KIdve4nhAvgeoQA1sV4gwuGwrnQjavQwzwyzgHgORQHREMQcRG24FS8c3PGFRG0MGj4yAQPp3mtUN4KTGohuRY4aoBfYWWJbIwaZAJKCJ1C+xdY4MgGsV+DZt4cpj7V5fHICsQCH8ljlZTMBKvB9AsVY1owFlsz6toc+OAB+hEyAmlEeDShHH+sF+MpHVlxRXyYAAhoBvqAfkL+h6ljV1EsOwAXwPUIBvsnHEVmU83NRvEiAv5GPIfY5H9MTYZGAaPC3cschgMdMqN1cfdhaL/XqBvQI0QxKxL7mZ5n3qArwA8T+oLkc+RqqAni8InjiqIec7/NxVYAfaI1r/d8AAAD//9/b/XUAAAAGSURBVAMADuHpQXD6n2kAAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 4, name: "Colonel Bird", weapon: "silver", type: "air", hasSpecialHand: 0, colorScheme: ["#fff9f0", "#008f83", "#ffe100"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACNklEQVR4AeyVPU4EMQyFMzS0lJyLYyBRcACqPQAFEsfgXJTbUg3+vHHWSZzsDAghJBAv8c/zsyczgav0yz//A5QTWD+OK/jpN0IPYH3KAMv1zUKQpAF/iufDmsCUlJLpsUO1XthlAByfwKfAgN9ivX9IoI3jWx07vqHtUQ0AqSUQA62Q970dcYmBSLsbYEQkXsCxv98UN2ETO0c6K2oOKRyAxKiAnOL2mLQxzbE1GC8zreEAfFzL60ulWI768Uk/2CqZY4WTk6oxOZ14AFeAAMh6+kUznPo8OcCRGt+cGkBKIXndmyUegKcx5ALEDISw2YHZ7AbiCtNh10C9xAM4zuiaOcrQ3FI7HcCO1Autd0/JYJ3NZy8x+RuBbRrYEa6ioMbknXGcarMMjpBUB8dVDdHqODkQD+AKECjXSISXt0MqkFuieRdLwkGbGnLYCqepfl76AQbEzE/aIDcRG/+UIgZOXrwG2tUAl95XUQ2EytUspNhoe1QDaEl+Cj48g8Zt8c2fD0kaWwZ7PTvyX1A+xEoja3tONQDvjSRF2AC/wDcvwcZoOGgANGFisxuqASzIbkfVFpDbCqs1raguHIBCEBVUMY4UVMHeQQv0mZTCASKixjY0k5uxKHfjsm8AEbV3KWb3O8t15BzYPQB12sifhtgaI7kTXxpgZ48p/W8NYNcp+qItZpzpY7vkphNAFLi6qQkXTEk5OR0AEZC5uzdqwaxwOgDHGmEkGHGJjfjEpwNA+C4u1X8CAAD//8K0kSUAAAAGSURBVAMAf3U6UJnG/pIAAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 5, name: "Killer Carp", weapon: "silver", type: "sea", hasSpecialHand: 0, colorScheme: ["#fff9f0", "#f024df", "#eff700"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABvklEQVR4AeyUwU7DMBBEGy4cKZ9QiRvi/z8EcUPqJ1COnEJey0ST9dppCAhFAmnq9czserNxuNn98d9/A9ufQP9x6tdco+1PYM3Tk7tqAmvHv6oBP9xjii7BogmcHo49yA6EQwO/1kD/fDjXfn98O6/+I04e11rxogmo0N3LvcJxzbhRbASzDTBSoXs6NkpdJDzys17Y+m/RQEzKnkzj9rIZF3NjbfKLBiBl5GKxVyF/vxzowAfkGXO+/lOqJh7HpAE3EXOAmxmvDnBeMRoe7VmpQS1i4DH7SQMQERTobvfd/vXQofkBA7cD8EDawHXkkAvfwqQBEltmdFDzoIGaDh/1SQOZISZwL/R+h3HuAHlwaMRCzI17fEUDkBQT2At+ALp4j92DjiawjygaUAHeIYgJS/fUAOSpNrFQNNAyK2npqoNV2/OLBhAxAuIaXPc486ODTEsbyIzDZeuzzypeLDx4sxoZd1UDXpADAMX8cDgADzyHfQ1XNVBL/gl+Gw3oO2ade2o8wpwXfXYC+oQwA4r7u4cDcGjEQswV72uzgVqBjM84DqrxaKDZAN9uDSQ7aj5498W42UA0f2c/l/MJAAD//36C8aUAAAAGSURBVAMAEHX+QT+lK38AAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 6, name: "Triple Threat Snake", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#abfa00", "#001eff", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB3ElEQVR4AeyXQVbDMAxEHRY9RlcciZ6yHIlVjtFN0NeLHCWR7cRZwKI8ppZH0mji1n3wkf74523g8gk8X2ky9Lyblwww2IZ+3VLye+Nba7eB7bDvV2tUnO82EMudZ7sNPG5pAH7kdu9zpbjbAIL+begZjsYlAwiA3uH0njIwpTSBdJ/06iEA9CSEIwfIwx9B04CJnxHVwWJIe3VTfqkaMIHnz5AVhrs8Y96tA5+zHtNYVy67ooGo0Q94fC5GfOxrbEykZbnQwLZBP2TjsBzD3M1gMG+XRWrpAUZuNY0PDViS1YskEZ7GIQFyHnCAGs+v+n1ijpsG5rq8yDEM+WtXzMhAzcGR003hJTqF0IB3HTUV9Lvo0EBVSa5Xft+5EUAalJOchKvf1gPsDFiDPwWvaNfLcxZHOXSA1WzXnQEKMAGIfbNx0SDjrIZeYgN7r8Ue7Az4Ih8jRMMRWK3v97HX2BkgSTEgjqC5Ub4XHJQLiuFBkFIqNKAZ/yIfLv2Qea4Sa630VEpy6piBuRxhMG93CzmwS1SIUwayTvR0EZcbykGfgbLe6cz/N8CV4o4bWo9odbrKPy2t+uoJMHwroMLuDxTLF/mGiaoB7m8JNtjWUh281URr1UDUcJZr1f8CAAD//5whKEIAAAAGSURBVAMAm0/QQScGcy8AAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 7, name: "Horny Toad", weapon: "silver", type: "sea", hasSpecialHand: 1, colorScheme: ["#8efa00", "#a6310d", "#ffd000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB6ElEQVR4AeyVMU4EMRAEbQKyy3kDEUS8BTKeAA+BJ5DBW4gg4g3kl5EsW0CLPms83jskENIhNTPumWn3rtdwUP74Z29g/wb+5xu4eStThF0u1PANTM9lkvD96epj46sXMd8RDlP0iJ1sVlwbhwZ84OJpXVnfHvN7E+LUs1ntr1IDS56gL/1ZGWmkBupJqcggwqsFR2erAuAdcIAewAz1+qVBHiE1wMDD5aoAcnB+tyZ8mGBDAVI1cmYAeYahAc709XFdAEKI+kZwAI4aOb2AWdYZhgb4siWAKLk2mjcowDn1wPks6wipARe4PiwVsAFoxeAAPUB11xDnMTWg8yVqyMXnj62AqMaMoHoUuwZm4SkagEe4rcFRa3nWPZ5a1wDF38AiA/OHVmWGcwZaK8IBrX1GXBS7BhATNOgfFDXxnnsPJrieQL1tDA0gwscGNACnfBTVO9k/I899PjTAxhIh9wHl8DwhIBfvsdqfYc+9JzRAQyvarunpYZveroFWnKvEVRPaungivW29t15soCfwU34nA5x7u3HE0dM7e2pgsQGuGmAoAz0g6/HaYgMa6j0p9axGPcIiA7qSCHjO2uE1z7NjSA0gAnwTcjhADsgBuQMOONfmqQHucwaJZT3U1BfF1EA0sC036n8HAAD//90M4i4AAAAGSURBVAMAqNsHUJtLR2YAAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 8, name: "Sledgehammer Elephant", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#d69ef0", "#464646", "#fff700"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB6ElEQVR4AdSWwU3EQAxFZ6lg24BCwpEbgisVUAoVcAVx40gKgTa2g5CH9JHlsWdmsyAE0pc93/b3T0iiPSt//Pe/DUzTtIBTbuLmO8Dit9e5APKtJoYNvD8eFsAi4sPNS7m8mr5ADqeacs49DBmwgjZnMdASW7O56lEcMuAHz2/3nioRVzUFxCYDH0+HSiriqqaAGDJwcbffBbNNanRmyACbRgWP7W0a4PWyuH++LoAlEagBO0Me9YpLDbQGWQIkQg509rGllRrwIr91Tg3M87zjHReONaA5IlrZfGrAf0giEW478OK+12vZ/tQAwoLeAIS5ohboYQEzmifCRQgNZA+N5xEGVtj3qJbxoQENRZGFguo6E8URdTfIBYwAnUMD9hZHIhpeawXoHMW1/v0VtYuVVwb8A2PPMhYtguvV6fGoDKiBhwjo7I3Ar1dRADnLicD2rvUFzkN3pjKgpRLhjAj/XwExBCzgVCcyAxeBOfGVAQosBeQRolrEMWuXRefQAI0tRFcXcdLAhCBOcZMBDf9E7BpoXVnPwMhs1wBL+OkNyEdALxjpbRrQFejn94ggPbZfGvARmgZ4tz0iEcv5fs627vPUgL4DfqAlmNUyLbRTA7zXGXilGLaAy/rhba/NUwO26ZS8N/sJAAD//3/rAYcAAAAGSURBVAMAQfZAUL+RRaUAAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 9, name: "Rocky Rhino", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#909090", "#fff700", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB7klEQVR4AdSUwVrDMAyDO248KcflUbojT7rj8B8wUx0naXuB8SESy4qsdSVvyx//vF6AdV0fvYc26vXOnHoCDAJuyh54fWQ9HKCUcvEBDAVea8+52Xo4AIbXUlg2yLiNoFOcCnBb18Yu4xpRQpwKkPicpqYBHvel+9bPpu45Ow3AEIwU14+yAHqAPVANe3ozDAPMTBgKRkNmHsMAGN8+18VBvQeuZ53phwEag/et3cVqsGGN07rx0KbtuwHWcOXWS+ZuJ8IAY56/9ExTtU92Ua/4lXQD8N0CfEr5vv3s014WGwAHzGwB7CusVzVW+Bk8gFFom/+oNICZ/gr9MAaAATzWDPTQOPSse0ZNGsANshUjjDPQy86MuEMB9gwYaeKnJ1gaQB+vHmLvPQ4rnEfjPHvgPed1bQL4G+svkYq9B4cpK9C9auhprXt6oAkA6chCaI9PB3q6bGDkmgBuFoV8t7x4HqC3okHb60e+CYCAEIA9qIZcMlYwQHtG1V84erUwLWfgai1/IpcGEP3z8rBLRvnh/kcbQ8TheAwDYIAoIuMzjnPwDAbUEcMAUaw1xl7r3rm96+kAewfMdP8/AJeMYvaJVMt+ph8+AS6ZaOCm2vO99/SM95TT/TAAQt7eiMwULuqo8RhhGmB0eE9vpvkCAAD//7U8TKMAAAAGSURBVAMARNIhUMvtAU0AAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 10, name: "Roamin Buffalo", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#757575", "#006875", "#fff700"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACNklEQVR4AeyWvVLDMBCEFToK3pOWwpQUlLig5T0pKMN9F61yUc6KQoahgcn6Tnt/K9lOuCt//PcvYOoElmXZX3unZmumBDCchgB/BHLAKCfGpgSs67pTEc2FERdrlJfZKQEU0hDgC70QeHIA/gymBagZzd9eVy2bhSPWiEknF/BoDx3YaPL8spxFMq4l0Qs04ujkAhSnSBBnNtvpGac6rNVsfXIBH8eHrhXSKGD9bJHifogV/GP44GU9LZILsECxguWhFMAS7N8P916WwYBYBq+1PvTK4nDbAohWeKPqj4yEkTNbMyWAhqNdeNwuu6fDwxmH86paaPOzLcDuI8cLVK0BsiaqOJRQrR5IakH6TNTcXIANr3E33gTP7ie7Aywj4IAJ8m/NVhOTEj8X0Cfa4J7y9aMdOfDFzy5zAtTbToadAVGycKAddy/aavdf5exXdVMAxwl0pD6ob+pkd4k50a9piAB1WVIBPrhm9E8xMVDDzcCBRlQnvpq7+7IDhCQiFUACTzLAF6KYOOzED/+8aIiLSE6DvqkABmsYPoncW7/HvijFeZoa3BfPV7Td77p0o137ol7EpQLIiU1ZC1GEONk+piE6CeVFuykgJrH7uM7EnXH1FKIICRFHzzkBZN4ABgp9m8sC6k5OCm/hThqV/DXscn51OT6BbKfXyrnQYyzAhvGORxg1/MRc/GGyBYcCsgYZZ338k8UyzpPrZSiAVyvDye9DbQSX5cIpJbNDAVnBtdyl/G8AAAD//+gjU0oAAAAGSURBVAMA9ZUQUN2rtEUAAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 11, name: "Grizzly Bear", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#a33f21", "#00b7ef", "#fff700"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACBElEQVR4AexUy1UDMQx0uHFMCWmBBuBIeiB9UAJ9hB7CERqghZSQI8dFo2X8ZFn2fuA9OJC3Wkvj0XjW3uxV+uXfv4FVO3C83Q3+5CLMc6J6lQEIYUEbwNbEagNrFot6FhsYPpJu/8PLOesx51yemJEsNkDN5/sd02TzDM5MFhvYXKdNS7s31+qZNnC6DMnF4fG90lPM8bSvYpZA3wAES36usKCNPOGTjgaofQP7rW738ekmIdBQxH6bEqIAk3Izfz9qOEou+waEloUkX3rN6e0awIeGix7ezrobrHU8XZKcs6b2ZrlWw3KYtw3I2eUz5uKynXgqBAU4AkPIkahRmGC/mNRvB7l2bBuwrCDHYsPdNiGQB5RZUGxAnj7sFhxPFc4JqHPCkbS+GnhsoG4vECyE2LxeEgI5oiDNLEID2FIb1CLG2o9+njVHz0cdGsCEvkR8+QSwbzMEBSoui1mu1ymapGgaoAgE/FusmPwjpH+8JFdsrMa7nDkxao0T5T00gEaEUkUII8844wBlYf7tUHKOXBoHjgDHR2jAk1hnYQLBOIdj2/oGvp7eNizOJzT6BqLVeoK9uUhLsLaBFWKiF18drbaBWOrH0b9rAB8WG0sf3fYib/WHO9D7cNj/fSWK70IFjkBLMzSAj4YPXbizwLiM3MGR8P2oZba6QgMV6xvAVOsnAAAA//8LF0r8AAAABklEQVQDAF2zCFDrryekAAAAAElFTkSuQmCC" },
+            { series: 1, indexNumber: 12, name: "Blitzkrieg Bat", weapon: "silver", type: "air", hasSpecialHand: 1, colorScheme: ["#f2933a", "#464646", "#00ff99"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACNUlEQVR4AeyUsVLDMBBEbWomH8QHmIoKekoa+BpoKOmhosIfwAdl6I2ektVs5FOcGcgAMzBs7rR7d1orck66H/77N/B7TmB9fzaBY18J9gDap5zA6u69h0QE5BG+oqlXezG/GGDhoNhRa6yHYZgAObVEgbVDfB2bBrzQHYtnuHKZ0JoY9cDXKAZ8YF3UWj9ffBTp6vW05EuJ71UM4BhEzd6gmtXtdSkd3y5zLo0FPWndAdZCWvdA62JAhIviiAwkCuuHp5xyCsP5S0fMRPqoaxOV/6PZMwNURoUcMd81IKdOYHM4NECOlox0gDyaCR8aQBAYBrRWdM5z1yNeumLTAI6XBqADDYsiOrMiDa5pAJGjdcDpwpHXkOY95HWdr/ca8EKeYhzHngunjVyHy1qqoda1fXnTgC4TRwg0BBN6A8QR4dDIAT0Cs+AiNA1ExXAMY7AfLTkcGjURWtpBBvzJNJwNo1xc1CPN40EGvIGnBeL47snhALkgE9QA8R5DA+nHY2IY0BCa4IkAjQg89xo07++mxwnOMTNQD6jXauam5+H9zc5vu/SdmGo6AFmZmBmgBrABIAetS4RWo1krE9YwM6BN9eSsNZCLJ9iMnIonQqiHvKB6eviZAUg2BeTfAjYGDKtOITRAnRA+SRKd9zxJ5b/wbCoUdZMsGtiUHe/zbxjgPXe0zsNryFt1zi+eQH7XvWObO+/5Vs6hxWdx+7FogDreCEc0GM5ryOldwkEGlobs05e0TwAAAP//F+B73QAAAAZJREFUAwC8B1dQehgWrgAAAABJRU5ErkJggg==" },
+            { series: 1, indexNumber: 13, name: "Gargantuan Gorilla", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#464646", "#fa1e1e", "#fff700", "#909090"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACH0lEQVR4AdSUTY5TMRCEHSQ4RrbMSbKIuAcSGzjJKCy5RyuLnKTZ5hiwCPkmqqTiZ78fYDQ/Uk23q7vLZT/PvCsv/PO2DWw2mxP4l0t8uzfgJ/d86W0svoFf6/Vpt9udttttccBRe3YD2uDr529Ki+dXcmay+AY+HI+r/X5fvv/YXbcgh6N2JWcmiw3wvbn6Wh+OWs1PrUcN8E1rRGbhtLUwXGSWup913evrUQPe6Hlkli+Pj1eKPDKv6yXJLAOfHh4KqIXZGNQ8vaDmW+tRA4gAH3z/81gA3PnRFUAOB8gFZoHWrThqwAcOh8PK12P5kt6ugdaLPp929fvjugAMnB8Yj470iYOn54mwXy0tlbsG1ED0E3GlAjWgNZE18BnWPTQNnE92iswSeYEPR/Zfe+R9LfIyH3n583Qd5U0DKipiSDkx8iJMDiLv13D1DFwLswz4oH9jXj1Q3WvipuIsAy7Mg+JbAx4dIAfUtKHPiGvFSQMu5BsgRg2QC95T19TjcWAAAU4jqJlvGnl7ZP7KPY+8f3DSIaItPcWBARVclM3FR95MiFOMvNV8xrXUq9g1QENvMPK2EX0gcsjB9zSogYEBDei6/CQMCM57rjpRvLSkTU0YGKBAIyD/H0ALtLSaBlqNz8W9bgN8O/58HFM34b3kaIzNdG+gN4gogv5PRrlq1B09LXq6Bng0PWhDBAS4Xj+8+urYNVA3/u16au4PAAAA//8ojOZYAAAABklEQVQDADMQOFA0LnJeAAAAAElFTkSuQmCC" },
+            { series: 1, indexNumber: 14, name: "Swiney Boar", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#cc96ff", "#0b318a", "#ffb330"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACAElEQVR4AezVMZLTQBQEUJkUrsAd2IKce5CTkENIQAg5CTkX4ATkUHsIrgCx8Au66ns0ksZysMluVdf86enfv0da20+mB/57DHDTE5h/vJjhlrd4KMCvr/MMv//cT6CGI0EOBTgyaK3nUICXz+8Wfj1uIeoQVwXwmMFjf/3ty1SBcwadOavUVQFevTudOBls/fvp+wTqcNHgRjAU4Ond5xkYZpC6Rc5ooT3v7XcDVKNaM3v28c0E6qBqap3zdt0MMGLQGrb7PY/NAMx+vn0/BfYjiN66p98MsGfw7/7DBFtD9jxWA3h0+acy4Jr/7qrlwYtHD90AtYFBDM+3PbkRMDvrJlDjgMZej141nHWztcUiwJowjTE1LFzqnIVv1573IkDblBvhY2AQ4EAN6mjUtde+h0UAt4Ge+BaOJ7QeFwHyPe79EUNtcCMcVF6NAxr7AAc8cZmhhosAiEADZG+tzUxxUOuqccYD1D1cBIiwNdHo3eY924Pbgjqgoc0+azwzI/xFACQBqINqaAC+alLnzHntsacBdcUiQD1cq3tGPW6tv/JDAfzmQxrb2+ErRwv4PewGiPE1P7vRpncrxG4AzTFUj2K0ZyjA6NAjus0APjo+48HogOitPLb6NgO0jQxbrt2PaGrPZgAfrRa+eIIYZW9t9fbR9dbNAL2Ga7k9/X8AAAD//30iNgwAAAAGSURBVAMAYdQcUDJkak0AAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 15, name: "Gruesome Gator", weapon: "silver", type: "sea", hasSpecialHand: 0, colorScheme: ["#fff9f0", "#657513", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB7ElEQVR4AeyUMXLCMBBFTRpaZjhCzhZuQJcyHTcgZ8sRmKGlcvw8/p5vaSVjuwhFmPns1+7fr7VkeGv++PM/wKYT+DgfW7DlFlcN0D7uLdDGcKD1krhqgCUbzGnXDbA/5L5RLldlmeIA3K2QdT3ufer69dOAfjHkej58qZ84pLJQHOD7cttJjQHQei6iBdK5l3KKxQEk8Igp8JxzasBzc3zRADI7fb6LjjHKjcUKqQ7A0Y13nJiwoSMp90t68egXha/qAPptYwQwu15uDcCvWzcATg506x1aQF4e8AjVAbxhtz/0L+XpfPT0hKsm7aRYWFQH4IjTPp5QG3UvXAPQkKMGd0QeXi8O0Bm3CDEAcIHjjaA6kR4Alxc8RThA2uBPRg3jCNS0gfeQ8xprIRyAp5MgNfKaNIppzXvTmnqyAfTW0gAk9Bjloxw95AFc3nBhMoAEvMVAIkXVWcs05a6hBvAC8LQ+GSAVaU0jd8i9wwE1jhjAyQE0aOFANW2sNTUwGYAEAgAX3JANlE+j17wHHZ4A7sgG8GKJ+0bSRDnVanHVABj6EzqntgSrB1iySU37+gNsOd5nel/7BPjt8ofj0H3y+4+4a+F4SBfFxSeAqW8uU3LUtH42VgfgjyNCyTzSkivpyVcHQLAVc/2/AAAA//86vAaDAAAABklEQVQDAHGAFlDzJ1M0AAAAAElFTkSuQmCC" },
+            { series: 1, indexNumber: 16, name: "Sly Fox", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#d67a2f", "#fff9f0", "#00b7ef"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB5klEQVR4AeyVPU7DQBSE1zS0XIM0nACBOBYNouFKtCBOQBOOAS2V8Rdlosnj7a4dCQFSkIb3N288XttwUn7552jgf57A+vZijK9O1oucrF58AnsXenwfC9gq7822vV5YbECCXGz9cl02SE5EvF5cbGD18DrURFuz2s5iA9w5YqvLJ8IGyjXbNGf+WmxAuhx9lqs3N3YNjJ8fI0CQeH73XLKjpscMjrjKqWtoGnABz/3N3wnb1+Bcz3dcS5oGxHu7vypANZHn7qAnwAWqW7FpYDg9GzKh8WYoGeKF2EUj9r1uGuD4eK4s8Iyj2FQXwFyY6gEuNbtokNfQNKAlhJRzAeUx+sx3Is/rqoGWc44WTJwCyIELez5xvv3v0LxqQASi3xli3B1gBsgBM2rgO9Q1pAb4i8YdCb5Mz2vP44xaQNO5ylMDDHmRALkgEUTVU1RPHPXRAKpjrBqQkJZVS0AXpPacWtzaLhwhNcAiECmLzHnOgDzjqMccqPaYGnACOS8XLxk5yMS8B5cduD10DbgQwqAmygxo7rvqxdg1EBeoM+GsB7eHpoFDRf2iPY2mARf6qfzvG+AbF+aegvjE3k7zBKKAar79KKyeOJrHWn3FpgG+7QhdSAIemUU+tXNi3jQQyYfUvZ0vAAAA//+3MLeIAAAABklEQVQDAOcVJFB9pMMmAAAAAElFTkSuQmCC" },
+            { series: 1, indexNumber: 17, name: "Hardtop Tortoise", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#464646", "#ff7e00", "#8efa00"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB2ElEQVR4AeyUMVbEMAxEvRSciRMECi4DNY+CRw2XoYCcgDPRhPzAhIkS27vZ3UcTHhNJI1kax85epH/+2wRsb+CoN9A9pg4cc49XC2iaprv+bBLAXytilQAG3ry140x8uJE4wFklgP7vtw1mgPsDccCjKODlK3XAz9n9OMdz+KwFsc7jogAK7555pkRDQPRx9ff6iYE4agCc1uLnUBWQW3gqviiAs+WWgziQHTtinjWAHjHncVZAvNW7p7TzhSU/1sZevnZRAGfI7lTYtu0wnB0B8dGSA/Bag08veuJHzAR4IQu9kXwN6XeaAE3FqQYOnx74OcwE5ArF0xAoloUDive1RQH97oZX7820U7j+bfF54g7w3ED0j6UePT3+TwRwWWgijFW/Dnlc8liHONV47vUhJeCc/IkASM4N4JeggdS4T5zD0q/iTIB2EEWIzzV33ms19P7y5zNWrPqJAIYCJd1ywYA46jhfgC+eGqAYq+GycMJEgMho+8vWiaO5DxQPR06xr9GuZVWD3UsAhQ5vLn6JIxd3HeOqgFxj591nqCBeQ2WVx1YFUHRObAKqb4AfGYeOg89vyfdafNXkbFUAn5eDwSA2hANeix/rYlwVEBecOj67gJrgbwAAAP//bfVFTQAAAAZJREFUAwDIdvVBPffdmwAAAABJRU5ErkJggg==" },
+            { series: 1, indexNumber: 18, name: "Rubberneck Giraffe", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#fff200", "#074352", "#fa1e1e"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB10lEQVR4AdSUO07EQBBEZ5EQJHAEZ2SE3IATsAddTsANCMnIOAIkfAKzz1JZtdZ8egwSLFLRNdU93eXZsU/SH/+tNnB2ux3l3bm0aFxtgAHjaxoBfC26DDBMeL/fzTPh0olzIkC6DGwu00Y9v64H0eTca+aCCukyQB8GgNOnF5YT4GhgEjr+dRvo6B0qXW3An9Z5aKoVrTZgPX5E/78BPjKCP6q/bs6pUT2RdQ3NE/h42M2vnhoSz++2yYHGIEW472WdQ9PAchMD3p4fJ3k/IAEWaOTgPQgZ2A/Z8LUDNL+4uiEcQBo1gD0HBYVFyID/xjTmacHnMCQAB+Q0x/dIy8WmAT/W5fvOFxB4Y6/xvV7jvGmAYl02OGAokA4H5IB0eAtVA/4EfrzLAcu113qPnJmqgdwGNC4Z0ZHTPF/iRQNcIpoKaoAORycCceXQOAV0wLqEogE2cKEAHPgAdIYAOHngNaxbqBpQMx/QatibLxpgKFBDLhOXjbXrrIE0aqh1DV5C0YBvUEM0H8BaoIacr+EyBs8hZCC38be04zXAkesUnEuLxuM5AT4ooPVk1IBWnfKhE/CGztVE0XPOlc/FkAFeJQdfP6CGcOA1cOVrMWSg1qCVa+W/AQAA//+LKGklAAAABklEQVQDAEZH7kG87liuAAAAAElFTkSuQmCC" },
+            { series: 1, indexNumber: 19, name: "Prickly Porcupine", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#464646", "#fff200", "#fa1e1e"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACAElEQVR4AeyVPU7DQBSEN0hQcoTUKTiHaSg5JmUafA4K1zkCJRSBL9JYo7fP658UCClIo31vdt7s2F7grvzxzy3A/30D589y5vrEFW4NrnoDfvjusezWHCztpgBd112eXiasGQc/h00B3t/68vzajd7UcCOxotgUAP/jMFxCcPhxGKA2YTaAf2c/4eVwGFuvIadm2IuYDCCTOECfXbiMQwtaXpMBMNSgr9TAvzk1nOCHwuEFl2EyQBTzrSPHwSDymTZq1DcDYCQwQM3agjSsQkvfDBAH+76f/WOzROO+kwH4dv56o/H307443NS1eODl+15XARADiTBwQw7V3sPpVIB632OGWe3hCdRrrQLEGxv73wN3fpCM4NhTzxpnY4+mCgDp8NTU4P7jdJF87fcF0MCxB+iB1/QZqgD8U9HtZfXUXnOgDL12DTUeAt6a0VoFYIPvB6gdGMjMeWrxaOgdeAHnVKcBZOJD4jTIgTw5oBbP6lp5OIdGqAIwACRg5Vv6jYZDwysG1HACWmbUs6IB1I4qgG/GGmO4zEicNOiWYFUADFsHtPaYzTAbIL5KTK7hmHfMBnCx1x7Ca9csqTcH4PLpAK/FLV2bAXgyfsUcMmYvq11L7TrpfW0GwMDF1HA8MaAH1IA9ekfG+X4zAL9aGdzA60wL55pYNwNE8ZZ+buYHAAD//2Fso3kAAAAGSURBVAMAIb5FUIdJmpsAAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 20, name: "Sawtooth Shark", weapon: "silver", type: "sea", hasSpecialHand: 0, colorScheme: ["#79d9d9", "#0b318a", "#fa1e1e"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACBklEQVR4AeyTrU4DURSEtwgMiuBrq3mIaiwPQZAkKIIiQRIeAovuQ6Br6wkKgwG+zU4z3J5z77YVhASS4fzNmTu7vXvQ/fLfv4G//waul8vPfa7Rzm+AgwGHK5Jvi50MRAdGvTFmqgaOTu/3er0YaGmkBrSoKDHq2/mc8gfoMQMaKFdU32Nq4P3laiJiTUCcMvqOa5W81EBJ9PpmsfCyz6NeP2j8Sw34E1w+nXXbXDK47Ohs11JPMTUgggup93D+rHQdo160u14YktQAv1tNgAMdg95GQAOtjcHQSA3w2jhg4HV3s9n6UqqXReeigVbGDQ34AgIAgfJJ3l4fO8BMEIcdoL5rqkcMDTBowQ/2vLVXzkMDegqRVespdODhatUBeOqJox1moKzpgdCAPiMuEIDoOD658LLPox67Apo9sfgXGoDDRQLkAk+BIDUHfkynHSCnxwwOuYAGUF3G1IAc+7J6HFQKqScOc+16j74jNBAtliL+pJ4j7lzl0mTuCA1AYAGQl1D/+wJOAHP1yB30gfc8Tw3oNkMm55sWqOk76GlOpNbcc/UUUwMQaos+85w9R20GLzWg37UlgEgG7Uor4qUGINcWmY9BS6NqgANaAnAyjNltGkCcbxyQjwFcMIbbNKDvGDFEBX86cvWJcIHvUkdoGuAbjlCKRRx6Ja+smwbKhW3rFv8LAAD//yG3NCkAAAAGSURBVAMAvrQiUEVBE98AAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 21, name: "Danger Dog", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#9c5a3c", "#7fdba6", "#fff9bd"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACA0lEQVR4AeyUvU0DQRCFD5oggowuqIQMQUQTtpsgApG5CzK6IIOIEoiO+yw+axjtzx1CQpaw9DRvZ968nVvv3fHwx7//AQ7vBO4vL0aQrw45kPO99eITuNk+H2HKZquX7Qjg5KzB52LxAHON5+p+PMD142Y4Xd3tAJ+7YdY1B+B4c4Prh6uVdIh8n/wiLQ8k1QFsJALERngNaogAnRGeUR1gc365u2w2aGI0H6M1o7XsZZ5YHYBirfFtc0v5G0o5BDUPaqA5AAIvGpG1iBtGTh2tYN1CcwDf75LB+uxk4PYDeElDruVBvToA/2N8Mj4y8TjXr+9DBGYADVo4wAMveAnFAWIDBtGwdrQ5Tw+9bho9zRGLA1CYg+lpBzBHW9MsGoCniE+VTamhyfnWujjA9FT7b0DkGrERfNpsAHBzcBF7I7dOLA7AzfU/hSMEmJCHl0ANjTV6yQG4+RiLAyDgEgG40ARDc0ZzaszjAVznWB1AI5tdaxCfNHLqamu9aERxABqBIiIfHP9na2wMqJtDg5acoAZcx1gcIArg48fTSOSLxwbwEqihoWYPvIVZA/DFw8Q43fzdQOSEOTVG67XYHSAb14xi3s3tjbXMuwPkht9eH8YAvOOidwLqiD0t9e4JZKO8xkTkWl6ri7E7AO9vhu9+NCKXdayjpsS7A5SaluR62k8AAAD//y+z2jIAAAAGSURBVAMAHMguUFN9HGkAAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 22, name: "Hare Raising Rabbit", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#63e0bb", "#1d8566", "#ffa3b1", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB3ElEQVR4AdSWO04DMRiEHY5AT8RlQkNNRQniEtRcAkFJRU1DLoNCzxXCfhGzGll+/N4UKEiDx/O/xvtIcpb++e/0DNx9bfe1i9aK1WoWXYHSoJJWG+r6IgPe4Fg+bOD1crNiqJ9YXDHiUQwbUOPPt/d08fSwB3Dpo+siAwy8ur1JDrTR4eQPG+DEDKbYgUbMtQgfNqCmL+cb0eR8FoNksYH7n+08wvksBsmwge/H51XpfqMRC86d08IGuL9AlQx0SCcHaN9bQwbUMH/QduvrBDSEPHLYw1l7CBmgKaCZD2TvUIxc4LEaDxlQMZ90693HfGo4IM5wODnsowgZ0L2mKQ8ag/54mvbQhDbxw8e05x+CjX9dA6V7Wbq8Ja1Um3vpGlCBTseeE7JOA/g+gCZpbDyXfQthA96kdNqS5jU13jTA1yyNAZwmWtHYA3HFWNEAnJwamgYo4qkG8BxcapDr7KkB8Ba6BnQCNdO91p7m4nlMteTU0DRAY6Di6aE7/CDVIOms0pSDRi2A19A04EXeGN33zvMY+xbCBlpNjomFDOQnjAyM1oQMRAYuzQkb4J0WasMUZ63l5HrIQP6uM8A1OJo3R/N9jYcMUMzr5EBzeAzusRYPG2g1acV6sV8AAAD//9BbQeUAAAAGSURBVAMAhqHqQQOg374AAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 23, name: "Sir Sire Horse", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#8debba", "#005080", "#fa1e1e"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACDUlEQVR4AdSVsVEEMQxFDQEd0AhkFEBMDQyERDRwDRARwlADMQWQQSN0QAJ6Osvzb8/2rneGYe5mZctfX/K3xrt3nP75d6ACrjY/3jhmjEXM+AO2vgO6ofoDm0NdLeDh6YJ8N/UdGBhWC7g7v0lsjOEP7LlDHReQ2/348VwKFT/HSmCBMy5gQdERyriA181Rc4NerJE0LqDX5l5slQAKTq1RqMBTPusS3Hf6Hei09P72vVRTv4DhdGpA6QuAMbHvz5eCsDEWgMYCm5u7Ah6+3n54z8ModnJ2nWobgRGDE3yfrQZYy7oC9HT3p5dHKbczNtKiBTOOc3NQa2RoZ2oLyJeHAlhkcarwTVByy4DGyME8lGu5PxnaApRop4olp9ONAgcjFmsT1v5eFFJKywREAicxk5OldLXxqGMWs/X2r9rR+aEqoHb5vJR0gjUXD8MvJhy6UqxxGasCKEY7MXy1KKgYfgunBganZk0BdIEETQ4MPNlJufkYvmM2KCdyFTPKzlMVQCKmzGoRE6GbB3/KpRYWcZ2rApTw1/4yAdxuU8JNd+OjZGt9OKHH4j8i5yin5i8TYJkUt2n71IoLtsPdZjTHxQL2KsiGSf09Yh9YL6Bfd3H0MARUPzK8gnFO9Q2r8g2vPbMd0Hd6rvA0rrm1zcFmBfjrZa+dzmlyYgqBKSd8j3WGWQGd3EWhOdIvAAAA//9ScyJ3AAAABklEQVQDAFYb8EFdEOc6AAAAAElFTkSuQmCC" },
+            { series: 1, indexNumber: 24, name: "War Weasel", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#d45119", "#005080", "#d3f9bc"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB+0lEQVR4AexVy1EDMQz10gU9hA4oIpzgwpk20gZnLnAiRdAB6YEygp7WTyN7ZHt3GYZhJsy+SJaen5+9H67SH/9dDFxO4H+ewOnu+ly/PFGt5kTjzSeABT0i8SW1zQbOry+m73MrLkzWG9gf9Pinh8e0Oz8pkOt6uaf5wp+xAYgCEGSUHIt/vt0mALmU5oscRGCuNn/7BryAy4sFs3RRc9zk88z1oW/geJg8+TQ96xC7RnJz/5EA5KyRg5qi0tCa++kbECIEid37V2EoHQ9JITxe4JCPyHordg3gNYsmcte+F9XQb2mgB7QNyL3z9xU7wwTZ8WQ728sJANLQ2nG+ZeRiPiDt5tU2kKdAAMjDxaGYI5tpTYwN1BPyzlREeoW4FpN+D5L08nBxiA10putRN/pFz5v2eTU3NAAhD87hA4Uea4yskcP6KIYGMAkPEoAcqIW5oPby9wE5YFzuvHNrmgYo4k1AnNA6FhBozsbKGBqAIGBasgM8eIb6gyRE8K0v/6TsgRSD0m5eoYGIzU9t1Ktra7hjA7J7LFB86XINdYOrGZe1zimMDdgKVUJxlH2O8Qr0DfxA2DwMNPoGTOX3kkUG8M4TIyvkIY646HcNQAQAkbCxf7Bybr1MxhjIwzB0Dei7Le98HVNesFCUWs3juOBVg66BirtpOJr0DQAA//+p/6EgAAAABklEQVQDAPq1+EFBkrvlAAAAAElFTkSuQmCC" },
+            { series: 1, indexNumber: 25, name: "Bloodthirsty Bison", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#9c5a3c", "#6f3198", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB3klEQVR4AezVPW4UURAE4FkOwD0ICMgtcQ9EBsFmcBTINoAMcQ8k5wQEHGe9n6WSWm97dmbWsuzAlkrdXf1X78149tX0xH8vAjbfwJd3h6On9uPDzbEClxx/LTYLMNhi9t//jxPww/G34CoBFlj87c9+Aj7uGmwW8PbNr9k9l3JzTZsFGPTpcDtZ9vX9YQI+Tm4rrhLwc39zv8diEITjb8FFAd5qMDD28+/bnbhDcqlloasNNyugNsZnoXvpcHJgeOzoiytaAbW5Fj/En5vZCqiLPGOoHN+JK3Df/+4n4OsB/iW0Ak5DdprhUvOanBlgZlffChgL83KN/BifrnkC/NqeVsBpyLG53sVbcVLIaesMMwkb0QoYixJnoCXhYnHJh1tjFwXkNHWYRX4DwvFxiWO73uRiWwFOk4Jq8YDzCbYY+Dg54K/FmYD8rBoEGRReXHkxVK7WugU5qLweOBOA9AYDfw4G715PO+DP1VlqViCuta2AFGlS7A32jANch+RZPV3NyJ0JsBTGwhpbUGN+x+HNyoESs8GZgCRi154k9dWml4jKV39RQC1+DP9FwPO/AR+QiqX3oNbyl+o334Ch3YcHJ7e0cMwvCvAvNGIcknisEyc3ZxcFzDWu5Zfq7gAAAP//UhpFCQAAAAZJREFUAwD57RVQsOjGUAAAAABJRU5ErkJggg==" },
+            { series: 1, indexNumber: 26, name: "Bighorn Sheep", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#00b7ef", "#464646", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACLUlEQVR4AdSVTU7DMBCFHQ6AxHnYB7FH4hychHMgsUdkz3k4QplvyAzjduzElSqg6oufn+fn2Wmaq/LLn39q4O3zUICdHhzYfGAcP4HYCA6sYeSmbYzjBkLB+fmxgCAN0zEDYYeH2xtvFnl1azyiTcYMhDrTx6fPIndxJxkzcH8zWd149JGXEGOxvbFvgCMHsQINBMvTi6vKRTtpTi7wyFPSNmCJFJa8eZ4PESIVGgN4XIOjuSGrpWJ9aRtYG/Oj8oJ1bnemOdbYaiUZbQMES2J1f0V7f10KiDocDUiIf9H9FFytSdeA7kLiOWYgtPrSAFSiTIgFQovVgGfoGqAIiIl3D3MBUYOjAbiBXGDzbGwawDm7A5oot2NZFn8M0WReANwg88mOnVyF/IBt/XhsGoiBFLE5DbJdobFmcTHHtGzcZcAS9VRkN1Zc5txjXUaTuT6qKuy85Abk8dEdyZ+NjuvRxx226lsMo+auNXics5zcAJFyz+1eMlUEY8x57ADcmp00yuqQsKJtQJppDAWE6PHK61eofmmoRC6R260QufgGrJaK9SU3QFOwxtJ8pT/v/7BujWjucfJbMa7rMd4XSskNhIAena7LBHoxW2ubBuLuvVi2m0RLc73IN9k08B12uetZBrKdZdoe210D5xaNjbdqdA3EQpfif9sAfzARe08h5sB7eUMnsFWMRntiiDP0DfBsH0FfMuvLyYowun4Ur/+CBDTQN9BIGpG3Yr8AAAD//wE0aPwAAAAGSURBVAMAyDUSUDSkq9sAAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 27, name: "Web Slinging Spider", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#464646", "#dda3ff", "#fa1e1e", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACHklEQVR4AezUsW0bQRAF0KVbcaJKqMShUxXgQlyDC1DqxAATsZJLbMBwB27gzCdoiPFwd08SAyUi8LGz//+Z/be444f2xr/3AO83ML2B/X6/wmvfU70w6x8G0Hg8HnegrkNwGT1dL/BVPfbDABrDpM5D1r9tPSxLyO2wLA0XBK+e2Oc6uFgvAmjOCKMhePvbz/v26eZG+Qg1zoaHVw32GbiM/wIwas7Aafh5v67f7h6a/cP3Y4PDsjw+vRpoPLx67PMsNY4WOAcgMIQQax745f622f/6sYZ8XnE0HqQQ9uoMZzgruHMAQpCxGhK11cA4wIF/vv5uoKbTeNSBOgOfzzoHIFR8vNvtDIXQ8gEnvUFP0wMnfRd6b50GyFe1NSgPz948I3uiHgZwdZ4W4sryYANOngbqQHj06IWT5/KleWoYBnjSLxYHQBVwUPmt/YsDGNi71h7Hu4XNAPWpZgdVrfb2wnQDGOQNBnU05poWfK6zh06DytOgG4DgJQI1jAbQKqrXHKi8vmGAMGtkrMC7YlBXvbfni7mhdwMwQphqU9bCU7noqXzddwPEUKtv2LccwM0QPqvemZe2GYApw+C8z/VMy75cTwOMnqDH9zgHjXgaDANsNWp+LmazhgGeO/xa3zCAz+va4dE/mzUMEM1W/2Sght7AzPEC7xY2A+RBuR4Nzp5cj/zTAJ7KH0cGbjSMlr1q3MiPnwZguBZb/f8AAAD//61eLZYAAAAGSURBVAMAslB0UE2dLskAAAAASUVORK5CYII=" },
+            { series: 1, indexNumber: 28, name: "Crusty Crab", weapon: "silver", type: "sea", hasSpecialHand: 1, colorScheme: ["#ff7e00", "#9c5a3c", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB1klEQVR4AeyUsVHEMBBFddRCGVcJ6RFQADEBMQUQcCmVXBlUQQNGb08780deaQ3DzCVm5ltfu/u/v30Wd+XGf3uA/Q3sbyB9A8tLWUB/Wql9PBwXAI/6Ub2fSwMcXssBEWbL9zUM/Px1LKf3iwFOzdBm0LgWPkIaANOR+Px0LGDUn2ldkwbwQVvf7GqX0/316e0tVG5FLjLDNsM0wPQJnsVauZShU486MAzQC/k9QdWUEt2w1ZgBNtcuvVcr2zIMYN12UUM+OH73EPXDbJKiGq9F6zCA3UgMI/Hj56WAqEeNEO7DcaXWIwygwxioqN7QjqXWnM96zKgvexAGyIwQgmpYAHyEzCsMoGa9Qb3hon3ls54dWz2uTRgG4KsdCX5b5z5oWAHerI5VAB/gAwK+R6BcTZXrjGrwAlqDrwJQVEQi7Ue8D+EezCpnvwrgA2oC5zQARIA5vg8ApwaYAWjYZ1gFQIAhgEeIelENLXUNA6dGD4QBaCh4It8r95qv2lOuN1SOLg0wO1oYzLBFmwaY3eA/en8KED1ZVNsScFMAzjnYYsgMswCeIQ2gRspHxjqjfDSfBuiFM9NZr/fxfRqAY9ODfz5u4Cu1fo6990drGmAk3FrP5n4AAAD//zQIuJMAAAAGSURBVAMAHX3oQd9EF80AAAAASUVORK5CYII=" },
+
+            { series: 2, indexNumber: 29, name: "Icky Iguana", weapon: "gold", type: "land", hasSpecialHand: 0, colorScheme: ["#fff200", "#ff7e00", "#ed1c24"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB8UlEQVR4AeyWy1HEQAxExwTAYWPgRFjEwJkDZ2IgLE4bwx5IYOknLCPPR94PVRRVS7mtmZbU0x6Pgbvyxz83A/9/B46f5XjNMbpqB65dHOMXG4iLxzGi5+AiA70Fe9wpRi4ycHh8aLR7XFPUIU4ycHxZH7Tdx76Rqrm6p2mYiU0DLkR0zL1N8DyRpEfGI6QGhgJvHbkep7KhhnJcqYHptUwUdREXjOOqONVQbWpA+e/rWUE4vFeHj4WB0n5ZjWoLcDKJ2waC0O5pX2yBgSA5apZ06F24apAaiN/2dF8mtjMuoHkBrklO84la56KGczEODdjhmbc3CqZbG5546ZGGacVVw7hrYNUgAa83nvm8kOYFWB5OOc1//jhpbjndVrzmfnUNeLKObK9xszDvHERuqTFy+9Y3wNMA9TeC8EC51QUHArn0woOQ82FjgEPD+wP1+ybnjUQOHWDsqGvQQAs0OTU1BsSVXmHDxSeKYwk0tQNOdGkM4BSQ9GgHaH7v8IAcW2zQJwq3QLXWI4I6hUIEjCMaAzHZjCVcHHXSeWKdS+abBvxJEo1h6pTeTQND9V9K3AykO2CfE58YOHfL6RFMI+lNDaz6JBbn8YDFsdVUtcYNbqkBvtsV9B+SffdzdM3I2Vi/F2Kf1/ViaqDXcC63Vf8FAAD//y1Sf7MAAAAGSURBVAMAAVOwQYU6Q1wAAAAASUVORK5CYII=" },
+            { series: 2, indexNumber: 30, name: "Armored Armadillo", weapon: "gold", type: "land", hasSpecialHand: 0, colorScheme: ["#9c6b3d", "#ff2ef5", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB7ElEQVR4AeyUwVXDMBBEFa7phQrwnT7CjQqogAq4kT64mwroJWej73j81vJakvV45JK8THY12h2NFNkP4cafu4H7CTSdwOdrNwDdX3Kg8Z7YZODloz+wCIsCcnHke9BkgAVO7z1hhM1HYsdPs4HzWzcvY/OZrEyaDVTqF8uKBobHyyAU1aYC1RMnajNkDUjg3D0HwFg49V+zKLl4IrWAAsbELWQNHH6OBwl5AiwMvDk4etEg30LWgB6xRfP38TpUZKRcEW6CqzHNEbIGKLAYd/N0uVKKjJTHONbAVWLTAP8dxwvQ0ouGYwVwFnAATrX0ArTgPbgG0gZE1Iy4XjxxtwEwB8ccObA9jFNNOOAaYMIiLjK+esV5L56US3vUm0bXgI4yLWbMTrS7mAcADxfzgdzDlubKgG4tDSDdCRwYF+HWgziAAzGdv/TCAUhpkwsrA0zwXwJyCysgUeZtbmuYA2gB8hSuAYnYJnELgfjYBbAgQ7C10rCcLV8ZoAHYIi+nhiMG5F6N5agBliNfGYD8T1QZ4HZzywVvJ3CaJ9JTs5EqAzVCrTVFA7U78QzU9BYNeMJ/yWUN8OjYZ1wLezvzOHrRUJ8XswbUgBDQuBSpBaU65rMGuNkWPPMCzRbiibaH3NaledZAWtwyLvX8AgAA//+lRNICAAAABklEQVQDAIhVGFAdiNBMAAAAAElFTkSuQmCC" },
+            { series: 2, indexNumber: 31, name: "Jaded Jaguar", weapon: "gold", type: "land", hasSpecialHand: 0, colorScheme: ["#f5e49c", "#75233d", "#464646"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB+ElEQVR4AezUvW0bQRCG4aMzwy04Ux2Gu3DqxC04V+4WDAOuwDUYrsAFKFMLiql7BHzAcLl7p6UCSYAIvJi/b2bnlke+W57587bA67uBu9ufx7w2368+HZG41pLbs9M38OHjt4ODkOF8qCX3WDu9QB18/ffrgpqb9S9a4Prz7wU5jI/EM/ayBZondwuYOTja3QW8ZNDAgt9DDWos+FtsLlAHVL933TVXtdXvLTJcYK/RgZXe8OS2Zg0X+HHz7+B7RQbNWr0wa9Q7XMDvOk2GQPz/6j3TJTVaRFRnJRfbXcCVud6I/MGgfZI1XhAdu8YHWohhlpn8lrMFqlBjHaT5z68vTJe2pteMiOvs5M4WSGHL5nrXgQtok+PPcLbA1qD1sGOeiK7iUDUafg/6Nn+yQF4WQt8laoO82EE9HmrrvyQbzEB6c0bqJwtI+t7QChMbBNqKHOSi5UNsJsSVswWICao4OfmQw8TVF6P2ZFbN0eBkAUIoVHLdNUfnasGvtZ5enQ78cLJAktXWl8pgtXZIzUUjV3vFPXYXaJvqATO1Vpt4egGNvSfr5Wj3uGiBvaEz9Ze9gGv1E0N9Km9+jfltTg/MUB+xeQMGpLH6yY1s1Va/px8u0PvTMAy9QXJq4Fd6s1IfLuC3PiLNrR3p5Vtt4uECETzV7vXfAwAA//853i9bAAAABklEQVQDAOxdIlCCdj/ZAAAAAElFTkSuQmCC" },
+            { series: 2, indexNumber: 32, name: "Humongous Hippo", weapon: "gold", type: "sea", hasSpecialHand: 0, colorScheme: ["#b4b4b4", "#00b7ef", "#fa1e1e"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACA0lEQVR4AeyWQW7CMBBFk1bqnpP0AN1XQso9KnEgThIJqftehAuwr1TReYPHDPHYIZGqbkD8ePxn5vsTO8BT98+vh4FVd2Acx/N05yJuWhPNVxlAiAU94NZglYH33a5YK+KKooBYbuBwOn/u94WUcpIrEjPEcgMzgkvTyw1sN311kVau0jRvgNsKTEDi4fnNZnlUTnKZIAaZiIO2AS9ADGKdK0sNMMbHxrmxbcAVTkM+scc0f++8bUD2dPz5ulerqNNe0SgSjmgbSIUqlOLvj9cOpGke4IARvse4aGwa4JsuN0WfZLvpOpCLUrC9Pik3Ginth6aBYo9FWL9wvIKLNSc1UEUvZIC6gcrpRVgXQuxw6jogMRw5Cct3RYvCugGyUyShaKHMpZppa21eNcAhAjeNcnsLzhVoTmoc1cEBz/m4asCKtDmJ2oFSTgo49UBCXUhH+68gPVYHX0NowBYahqEHNBtHDLy4jzWXTNALPEfsERqImthjYM3UvByPPSDOvPxO+Doz7musljE0QIIGQCwnPf8FQzzzmrxc4MhdZnJNh1F5uZPChO+qgbDayCRuUx0jThPty7yBlcK67B298wZU6e8uDwPtOyB7yDMOlm4CPcA/QZFG04AKpC4fJ6o6+FofRw1NA/YM2yi//X3GVE2+ei1n9TZOS/28acAXro3n+n4BAAD//5LcKLAAAAAGSURBVAMAhsj2QaLRckwAAAAASUVORK5CYII=" },
+            { series: 2, indexNumber: 33, name: "Major Moose", weapon: "gold", type: "land", hasSpecialHand: 0, colorScheme: ["#9c813d", "#81dbc9", "#fa1e1e", "#f5e49c"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACPUlEQVR4AcSUvU0DURCEbVJKAImIGoiIqIGEgASXQEJkOSKhBDuAAAJqICKiBiIkKIHY3HfSoOHdvn1nS/yI8e7O7s6bs+9uZ/LPf00Dn+/LNdjUJzugtZcaGCPQOqClUTVQLpZ1dnA5W9a+WzXgQ8oltFwcr8UpitOM+FasGtjdn02jZQ6YzZ+nHOiAoxft1LSYrRqgWVuMDoq4TIMeSA0w4CbIwcPqdnK+eqPdgxyOHujJ7sPzrgz/QwOL15cfvzFCwBXuLg6+S88hmQXkQqkpPjQwPzyasiBoWDW/tzhFOPXFqSaiKd5jaIABX0AAwF+dnE6UUwtw9KjJATlwLWpH1YAPeX799NiXH2c3feRDuXpwY5EayJxzAAcD8m52AsgdHRc+zppJDTC0d39J2ApjdlMDvGg4GaHWlXS/OfcG43wTU3YopEEeoWqgE1zr69ViaYJDgPrEcgYNtOhFCA34AgJAyxwowAPVRM3BA9WuKY4YGqDh0FUhgqigGdVEZuC1Q55hlAEJjBEdMyM9YmiArxIwUArCA3oOOOCcduGB95QPDPhd60vwQIve85wZEM05r/7AgBq825VHkT5XCMijGXFZf2DAh5VzY3GDZYKaZYZZdsid95weGBiA9EEJwSMMyCPQA+r5rmuqTwwN0PgrbGXAr0xGI069LKYGthX1A1saqQEX+q08NcDzLbgBHj2vyUtOe0T6NVQNRC+NmkiLz7SqBnhsHFyhUDtQfaLvktd2qgZqC5vyrfkvAAAA//+WASeCAAAABklEQVQDALYjbFAWU/fOAAAAAElFTkSuQmCC" },
+            { series: 2, indexNumber: 34, name: "Delta Chameleon", weapon: "gold", type: "land", hasSpecialHand: 0, colorScheme: ["#dcff52", "#0754b8", "#fa1e1e"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB8klEQVR4AeyUO04DQRBExwQQcQVHZKSIMxAjuIIP5SuAiDkDORkJvgIRJGafpUK1vT2zHwkBEpZK011d3VOend2j8sO/fwOLT+Blf713LH2Siwx8rNf7uGHGRU2WzzbQ2qhVyzaHm23geLdb0ZihVcv0cFUDJzePg2OmAWQbZRxa0JpVNVBrZBig7oADzhFnHLxQNfB+f3U4agY41Hh+u1FYPHYtMSLNIo6oGojCLGdjkNWmck0Dz3fbAqYOizp6QeQ9bxqQkCHg7WlTgPi4UgNoQaxnedUAXzlvOFs9HO4EHJuwds+2AGJxxK4lj7PghKoBCVjjQLgxTO1JDXB7uVyCNuNd371elNPL7YHqdAWQwFFDQw7Uz9rp0u/KwEBNyEDAMJ5vBmpoashmDwzE5u4Zfz171dgog+pas17VtA4M+D+TyFfqnntcq8ELrifuGdBt1QWiCZGgOjwQTwzIpSEG4jUz1nsGaBDUoDw2wnPEgNgRtXGWa3sGJNSAmHujanAek4PajKjtGaARASAW/MLBxbpzUUsN0AOIHQMDXiSOrw4bRE46asRCplNN66gBCb9r/bsG/Hg9nntSv/sEeJX4kIC5/4wewIxW7+QTYBjQMP8AeYwGSDe2Ng3w3kawGYiD4UDUk0et500DLlwaj/V9AgAA//+uQZEZAAAABklEQVQDAO1rLlC2mY6SAAAAAElFTkSuQmCC" },
+            { series: 2, indexNumber: 35, name: "Kickback Kangaroo", weapon: "gold", type: "land", hasSpecialHand: 1, colorScheme: ["#b4b4b4", "#15b3b3", "#fff200", "#fa1e1e"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB/0lEQVR4AcSV0U3EMBBEE3qAH3qBArgrgm/quW+KuFAA9MIPFBHyTppotFnb5wgEYuT17O7sJI51N8M//+0yME3THH1nXKzJ9rsMIOQDPSbXg10GDofDyJDb83kGxOKIe7DLQM+AVu1uA08Ph1Xb45W8Mtht4O1jGl7H8QLiK+dtyroN6Mw3SgtRyy3p9L/bwOfLy8Ag/+iI4cilUypktwFp+dXzWPlr16YBnkxA9P50YkmhnOpZ00IjqwaigO+f53lwSNNr4OIezlE18H08jnzp3vD1eByAc8RwgFigFw3ts7VoAOc6W4RAFFjEBxB5agE8GmgRZ0gNqIFXrCa+dOK79/MAiB1wAE61xNKQJpwjNeAFCEhwedoRKL+IciW15W2seXroXZOFIDWg11fouQyKOTcWc+xLmhsDnJkaaIrC5AE1DjjgHL1oAPiYh9sYgOT1AWJHJuB54lZNzKcGVOQmxDGkhZ7ajQGGAh9SEuTeA69VrJ6oFfcbAxJorZwrP8OAuFbPUCHWdRngWoEopj05EIfU9k0Dy12fEQU1Ic9RC+h1PoubBrKm3+SaBrjLPjDua7larfqaBlT4V2u3gdq51nKlB2ga4D5zzUAmwg2IPLWA3piL+6IBmoE3IArExeHkgPKsaADiDEUDiJeQCcGV6uHJZygayIr3cK2eHwAAAP//OCj4IAAAAAZJREFUAwD9DCRQUffsIgAAAABJRU5ErkJggg==" },
+            { series: 2, indexNumber: 36, name: "Octillion Octopus", weapon: "gold", type: "sea", hasSpecialHand: 1, colorScheme: ["#fa1e1e", "#005080", "#fff200", "#333336"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACBklEQVR4AeyWMVJCQRBEF6skNLPKiBMYmXkLzuBJOImBJ+AWZkaegMgqb4ABzvvFfJv5s8uCgUWVFs3OznQ3/Rc+clX++O8/wGWfwHax2IHffIzOPgF9Ya1PDXNWgOwFs15PmLMC9Bj3ci4vQOuoW7PaiRw/geVqF8WPt3exVbJeSbRRWA/g4vVqpkbzzWYWTXx/MEOPliE1a4J6AMQIAUJWYPXr54c9Hz7GHhzAmBXgxT5BGoD3csDb81Rihtfvm0l/6NksDrbmMXjZl1acsZ8EgMyA4wTUit3LSrcHdTbDA0B0b2rHJICTnVAaxzd/eCpg5MYiaCfexp8EsF6BqGk5RvqnQDV44Znp0wAQXYCY/XASckV65Vorz7XuNfiEp2oAxAC+Gsxuys9tuLbPA4Bk0Jlr8AA2Th9pABdgAqLy634RWyXroQWQ3ZNakQZwkRKpMQFDbbdXWdoJGPz9ZgaYR9Q80wCIEaiZ1sxbUC41XjV+NQCCUZh8wTBvYq8ZPSrkZgDV6CcdU1DW9n/CQA2cr1zv1dbuABhgDMr+6uiNsB4zMPY6ir4AdpUHXnHPMPbiHk6CvgAqbBm3ZuohdV8AO17R9JWdmuMBolHca5w4i3vl7utmAO5hvmQU6OizKryn3KGu/A5wbTMAt1ZEsfeZnhv4OvT2M2qFc7K1GSATnNo7xv8GAAD//18sfJkAAAAGSURBVAMAy+0aUG1S6rUAAAAASUVORK5CYII=" },
+            { series: 2, indexNumber: 37, name: "Wolfgang Walrus", weapon: "gold", type: "sea", hasSpecialHand: 1, colorScheme: ["#b4b4b4", "#ffd000", "#fa1e1e", "#fff9f0"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACCElEQVR4AezUTW4TQRAF4B4k9hwA+Qw5AFtWsTheDoKcDWw5ADv2iFPAwswXpURNT007HiFFkWLpuevn1evn7hm/ac/8eTXwck/gdDqdM/Y+SrtO4PfhcO43rGo9p8p3Gfhyd7fSqmorUlHYZaDQ2V262oB739pt1NuaGRo4f29niGHx7ftjpKtVDycaYoi8WjcN5MGI/3w6PGjcfvzQ4CGZv8Qwhy04MaOWY3nGpoFMEo9E9DOu4Q4N3P86Zd329vPPRe7IIRd7Tq+RueJNA9NNmxAIgHiBH+/+pTl+rJoB6fSoJe6xaaB6ot0v9CKR60HksVZa0SsNuENHC4jH43Gy9phuWoNWfGKGBtAsaK00kImG5fNGk/uF+6/flBZQ0wNczZgVb+GigRAjII57lc+/qoEY9HDEkGN5hZUB90UIeoF5s7NfBb2YGuDkHg1aQDv3xAsDPaHPiYDBCnpQ9aLWay4MBMkDBJFb86BNQB3EIIbMlY+wMBCbhkCfZyE9xwvi3BOHhrjqq8PCgAIyiMGduluQQ+7LIddwwazeCCsDIzLRUV/vEicbxb/KgIHRBqOejYFGxtDAU44wi1XxJY2hgUrwf9eGBrxagWs3jjnraHZoIA9moepYcy1zs0YVbxrI73EMPkW44lRaoblpwBNbwR8PhECsalDNqAWvXzcN9MS9+aW5vwAAAP//L3qPhgAAAAZJREFUAwC8MBRQgGj5fQAAAABJRU5ErkJggg==" },
+            { series: 2, indexNumber: 38, name: "Powerhouse Mouse", weapon: "gold", type: "land", hasSpecialHand: 1, colorScheme: ["#b4b4b4", "#fa1e1e", "#00b7ef", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACDUlEQVR4AeyWT0rDQBjFpy669wI9geANXApi7yH0QAXvERFcCh7AK/QC7isS85v2hddxJpOkCxEUXuZ97/szr8mk9iL88t+/gb93B5qmaUF6dNBAqtfi8+7A80cbQG2XgfxsA/5pnQ/slU1NNrBerxea1Hy9BaDYc9Jq62QDDGSj+5s1NAKOFoOJl1kG2OPptWGJcB6FCZfZBibsMVg6aGC/WrUOJim+3WwCtx7ApXuNa+g5FA3QnDak2ufVKgCvS2vI5TR0UDSw3O0WgKJzwAxQmlE0oIaX7VZ08jqmd9CAvmAYxKcANRfUAHqo1Qx4DkUD3ujv+PLxPQCGdRsFELnpxN7js8g5igY42YI3hLvLhX/7KRe1LqeYVf2sxDlkDQydWnIa2PEAGIzW8RaeQymXNZAbIE3PVo8BXVw5tLHIGmCQ0D3j/p+PhpLbP1wrDHC0XjgSejEX0b3WR/lkyRqggkME/AA5j8O7oVrpAV5DzJmJa+F3Q9GABmEiDjjnwuEEGRNZA2wKfE8OEQcNuO6cHKDW9SGeNZA2pAPZJK1JtbQnrVc8yoCKffUNnHtNz7n1gMfQiwcy2wCH7zAi8G34401RLq5sDGJweqkaKH061537+JLuNVUDFPOOO9By8Bp4ribVqgb8VquZ4a7D0ZTXii5eWqsGaOSVTIHuSPPEni/xUQZKzWP0Ws03AAAA//9VXdn9AAAABklEQVQDAO8pG1DNv90BAAAAAElFTkSuQmCC" },
+            { series: 2, indexNumber: 39, name: "Dragoon Raccoon", weapon: "gold", type: "land", hasSpecialHand: 1, colorScheme: ["#f5e49c", "#22b14c", "#464646", "#fff200", "#fa1e1e"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB1ElEQVR4AeyVPU7EMBCFHVquQAU1FSegSbUS0HAAxDk4CeIANICUno6OiiYNVFyBiiLki/SikWWPbSTEIoH0mL/nmZdZb3Yn/PLfv4C/t4GP9+spd228Wu5M8wZ29y671CBy1HKDcvlmAWrU9/1koXyr/ZaAs4vbMIzjOmsYx0BuTTQ4zQJ46rub8/D5dBWwQD61htkLtVkAA5eTiX9eLUFfUlUC9h82E+DE4fN9APgW5AA5uAC/hKIA28j6DLPQIMuxvuqxLQp4Oxm6l6PTADg8xwHgW7weDwGQgwtmXkfsoSiA77fXwKvVnC0K0AC9ZOa1BqC87MHjJgBicfFLqBZAI1YKWG8K1ADcWrgCtEL7RPPTr78FuoQaZms6ox7ixNYVEJMVazCXDihWPbaeiKyA3CGtniF85gDf5olj5PolBUBmhcA2Iq+YgSlfHGx8XnxrkwIg0ACba0KeCwfw4VrEuTgWNykAMhBJls9afs7GHPqAHD8pIEXWDWcAiDnkAHlx8UuoEtDSUANrz1QJUNOfsNsvILdKm7e+3VIubznbvwFeOIJVzvdfsfXJiY8l9tC0ARoyDMRNyQE4cc2LiwJ4iVh4zahZLj45D0UB3uGaWonzBQAA///YtX9CAAAABklEQVQDALAb+kFU6xFUAAAAAElFTkSuQmCC" },
+            { series: 2, indexNumber: 40, name: "Antic Anteater", weapon: "gold", type: "land", hasSpecialHand: 1, colorScheme: ["#fa1e1e", "#23b08f", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB0UlEQVR4AeyUTUrFQBCEE0GPkY1uBE/hCTyJkJMEPIkn8BSCG93kGLp45gtWaJqenvwgunhCOTXV3TWVIS8XzR//nQOcb+DQDVw/Dydw5D3eFeCz604c+vY4sMyQNm82/NsV4GocWx1ICDjahnOX1jRA6Xo5cHH4IZFGqeRBDaQBaMBAYC9cvo6ijeWI6mdln6EawA5jCG6f+ubrrltKcDRqYCmsIGmAj4e+XeGRttQ80gCZM0+suuXS1q7VALzlAqbTEzUAbvF+3y9b9bMuYoGkAeybveZnphC213pEGdIA0dVOL1kDvNnNy9AAr0cetqcYYDpk/tphABiarr4FcCAdDqgBODUAlxfcoxjAN2qfmWU1zfu1GIAXCDCgp4KjAbgFGpCmGTRQehfCAGrmZWJYptLZS+eaxdF9Dx7orLaGBsIAFAQG4f560XlKAKdH8L3SozUMIEMlliFPi4nqcEGaetCl+ZWaEAagyBCAW9gDrA63NYVGz1AMkA1F5pGWeahWDbDXmAPWzFYDYPSb+N8BuEJ+42DrLTAD8Mhm0xvAQMOWSyutttfyqD8N4AdkxsfH16Spx9dL+zQA3wEPHRQZUvP97KNeaWkANR1Za7PfAAAA//+XuWN1AAAABklEQVQDAH3tBlCzPKauAAAAAElFTkSuQmCC" },
+            { series: 2, indexNumber: 41, name: "Run Amuck Duck", weapon: "bronze", type: "sea", hasSpecialHand: 1, colorScheme: ["#fff200", "#00b7ef", "#fa1e1e"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACCklEQVR4AeyW200DMRBFvUjwiUQDqQCJAqiASqiJSqiAApCoIA1E4jN8LD6Wx7o7fiS7gPgJ4sYzdx6+fuwmV+Gf/y4CLjuweQfmzzArtt7lzQK2TujrNgk47nazb9TifE7L3yTg+mOfen3d7wLAMQ57DdYLeD2k1dvETFbsHIM7F6cF0BRIx+ntEFixAk5SQqAGLMjaGQvQBtig7rFkyAHGqm2cjGMBkmjm8fnBzGocxarkTIwFPN1N8+NdADm/DOXcI6N2dMs/daAQDWMsQLbPGt28vJc2TAyM0JjlW6w39gXkye1yTbdh8k1u9vsAPB/izsFRC9KFhGigL0CSUxPxzzGrmrwgX9sUkN7x8exLcl6Rrcz4+PYLwPw0Wm5ylh/0XTIhVAIsiS1P5+gawgHOWwEHygSurvDOqAQQZ3IdsYGJw+6hl4M466u1lQCSaAI00fsa83bJZRcimNznmF8JIIAIgP3XaArwk8aLNuvznsTFlZW8aCcuE+RSk900aDwR+eMsATk3ffXS3Hw/EgPKcxy9yclbJYCCBeLK/aO5iEdnNHkM148h5AjxzTf14qNYr+ZnO9DruoI/KcBfphW9eUumX0+jmqEALhC/erQBnPpq+xi1ntN87KYAigAJgEYAG2gMHyhHLoAHxAC2R1MAN7cFLpnxvpHxmmOcjb4GvymAwG/hVJ9vAAAA//+Dyrx2AAAABklEQVQDACYv4kFtuXo5AAAAAElFTkSuQmCC" },
+            { series: 2, indexNumber: 42, name: "Miner Mole", weapon: "bronze", type: "land", hasSpecialHand: 1, colorScheme: ["#d4bae8", "#6f3198", "#c0f7bc", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB5UlEQVR4AeyUMU4DMRBFHU7BAShpaGnoqOEQSOmg4wx00EXiEFDT0dDSUHIAbhH2RfrR1+ysvbtBIkWQvjzzZ/zn2+twVP7572DgcAM73cDt2WoNdnnHsw0w+PF9WQDxXBOzDHy9/azjwIyLPVk+y8Dz/Wu5ebgqdxerDYjhsgEtbrIBrvv646QwkMGAGI5aa2CsTzbw9LlcvJx/b25AYpiAoyZu7DragJ+OgXGAc94b+2LeNIAYYCMr4MozUAPeS1xD1YDEagKtWkujaoBv6lcbh3X1AiKvnL1dfaE8W6sG9NtGCEiMFx/FxNFDL6BHGsQZqgb0ndl4enm8PQkvHq673gKIxRGr1/fDZxg00Alv/9shpM1+Qk7poKY+3+NaqmtNDcRrc2HEEM9ATcK+R1y29gxouE4WN9WEY81zzIGo1zNAA98QELsIuQwSR8SaBqIB6BdHDFIDEpIJGh3xdmLuvRoM5zE56BlgKKAYIWPw9CAIiOGA95D7iT2mBnoGIP8KmENLg8kBnDDaACJ6+X5iCcGpTq94BgLlcR1lwAURiHnGZT30RYwyEDeR+wCPqU3BbANThtR6998A16vfudahE6mulb1DveKbN8AL5oU74IBEiIH3EMOpZ2htGhjaOJZv9f0CAAD//4qzvEcAAAAGSURBVAMAb0ouUMhG3PUAAAAASUVORK5CYII=" },
+            { series: 2, indexNumber: 43, name: "Cutthroat Cuttlefish", weapon: "bronze", type: "sea", hasSpecialHand: 1, colorScheme: ["#fff9f0", "#464646", "#fa1e1e", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB3klEQVR4AeyWsU4DMRBEfTS0fEa+5NJAh/hIWtKQL8ln0KYK95AmDIv39pJDognSyLPjnfXYJFLu2j//3QLcXmD1C5yOH6c1n+NVAdYeTvAyQHaI684ZKmS69lnLAMP9wxAHxZpBUaPGy94cygA9c29wT+t5ozYbgFuAa4bjwQvioV6nAWRkkBsu4fJqVs+bBlDznFk92brEmwZQeoYzCMCBc2rgGhygA59F7UgD0OTG7dNLYyhgrwf2AL3a9xnSfJ0NoEYG7g6HxiqtHR/O1Dk9u0Po/e78xRYFeH97bY+bzQ/z9nk8184R6cUDr1AG0BMyEHBDDXWORk0PoJYXnqEM4MY4cL/ft0nzFupBAp8H8WwtA2jIdNDX4OnQgZvGgWjsodML4PLDe0gDYASYNAyOpicex7EBdDT24AKhgOre2g2gQRwMZJROzYGswLn3sAemkOlvhm4AHcowwJBroH/JnLcbAINCaOUW/pzSvRdOD71wUIVIA2D2Q6gBBwA4wwEcDcAj6PFQvj8bQI09s2vOMw8htOfrogBu+Gt+dQC/kfNLA5YBeF6+ZsCHo6t2jkYviDp7EWUABskEB6rjyh6Q7lxaXMsAfBMieHKgYXAQ+6jVk61lgMy4VK/6PgEAAP//aYHGsAAAAAZJREFUAwBz6h1Q/5oMggAAAABJRU5ErkJggg==" },
+            { series: 2, indexNumber: 44, name: "Eager Beaver", weapon: "bronze", type: "sea", hasSpecialHand: 0, colorScheme: ["#fff9bd", "#9c5a3c", "#00b7ef", "#fa1e1e", "#fafafa"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB7UlEQVR4AeyUTUoDQRCFewTxJN5CN7r2AoJgMPcQ7xEJKHgBF67ceQsP4VqyGPsb8kJNp6onMxFEiPCsqld/b7pncpT++O8g4HAC/+8E2u/3lg8HayEOOwajT6A5uWxYXC6BI1fyQ/FoAQxcnc4wPXhcryAIJgk4/lxujfO4rSKHmCRAc1bNeQKKp9idBCyuz1rQLXj7ah9n951r/3VczsFRC/CHMCjADsJfPF+l+c1rYuHT7UUC+HDkqNFS64srbVWAHXC3fNj0smgTrB3L9Wrz6a1LXFMVQAfDAL7A0+LPXz4S6Px8KliBHqA4slUBeXhjG4lZbp9WeThy1IjDljGcRVUAPy4q1o8Mi8TlK0pgE+f3A1+1+HYGcYlQQB7cve28YECNPBFH64Gc6ugRmCW+tKEAW2gHM0yDS0tOfbZHnGdDAXrCsum3eM11BXBv3CNgoYrh5Vve+mUNM4DlNQPrCiChBpptjC9wzECx7C69qnUFsBSoiLvVfYuzeeurjh5ba2vEY10BJCKwwBsGRy7qi/jRAqJBU/lJAuzxarHHKVezkwR4L57H1RYrNyjAe7J9OC2WrQpgEd+4hRoja2vxmRHVwocC+JYZQJGFxynv5eCYpZrShgL4rCJ49w0X1cOXixWHAlSwrx3q/wEAAP//kwPKPwAAAAZJREFUAwB2XyRQBVVN8QAAAABJRU5ErkJggg==" },
+            { series: 2, indexNumber: 45, name: "Slasher Seahorse", weapon: "bronze", type: "sea", hasSpecialHand: 0, colorScheme: ["#9c813d", "#00e5ed", "#fff200", "#fa1e1e"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACAElEQVR4AdRWu1UDMRCUyYkcOqAS90AFJLgPnvswCRXQA5UQEDqiALOz3tHb060+9gW8493crmY/Gkknnh/SP/8tFnA67i9L1rBYwJLJUbtuAUu3f9074FfvfazqFtz9Dby8f+d5vJ/JQeduAR+vT3kK72dy0OkKwPYCZb/D29eGnPfJoQbguGa7Alg40uye3K6Aw+EzEennfP2vJ9YLUl84FSCW+bDKNV5tAdJsVhtxTIpiEcd8sW0Bu+0mAZJYPlidRxnXMWoBHcSvtgCrOZ2ezRNjDS+PWxlcn+xbDOykBkQFXQF6vlKsDd0Em9+zsNfH+9gxzZUQa8WtPm0Bcn7YZlSXV01XvZNdEKiPJANztVZ6GB2atgAr0Ubm0/hVe5/xqIYxb5sCuJW+AD54xXGfZJuT+v47QZIBMXNDUxUgjfXOa4Od3AZXjtVFcClp9FuoCkAznCVAMeDgqygMHMAhRgo+agFykW0KQBMUsQnH4DAhLDDx7TdiVIPcElUBaACUBRxrDEcjUJ+BwiIGFHQeVgXkDDpynXDuGEYNyWmO5CJvBGMCXMPqBJKjMc4qY7otOyag1WFhbKUC5MObLTziZklzYmgHcM0IbRGdr3HMg9XczqsrwN999NLG0WqF0xiSDGWt0RPTFYDrVWLSwQ3KPIxdOHS7AsKqG8he6h8AAAD//w4lwxcAAAAGSURBVAMAMjD+QUPPA+EAAAAASUVORK5CYII=" },
+            { series: 2, indexNumber: 46, name: "Knight Owl", weapon: "bronze", type: "air", hasSpecialHand: 0, colorScheme: ["#a18823", "#004eb5", "#fa1e1e", "#f5e49c", "#d3f9bc"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACdUlEQVR4AeyWr24VQRTG55JQBE+ARpOg+wpNUCBISKpBoMEgMKARxWCa4EA14RWqSdCYhoQnqIAKOL9z55t79uzs3r1pk5qS/fb8+86Zb4eZtrfKNf+7EXCzA4t24Pj9/X+7ntWlPVsFLB3UE7ikd1IAzaA3mBy1DPIZ4uS84q4AmkSQjTn8x89eq+SWmDyBLL7Qy1HrCjh89XMFIESc//rkZ4HFyMsenn4gLIplPWkvZgFzR09XgFixSYuUR99cxO39t05T/u6Lex6rrnycsSYM37MCoMYBbRErXJy+sff6+fHlztqpb/Fiby2NzFYB+r873n/Zmr9+ftf886Pf5cGTPwUb8/DV28gdZ1ZAHvD3+/MC2F4WA8xkMfynRxdeJyYP8gxyEbMCIjFuJ1+LCMB2Y+PBi9w4o+f3BXDQQO3YZWBtKYMeZgEVg+0LqAS+DNSw7D386OCrPXdyUAqwgJzqFvpDL/Bg4jUWkJWeHKxab/RbMjmRE31oebblRgI4QMBqfN1mcUtwoKgBC4vd+TUsIOfIv7iqCK+Fm2Qt/gwEsIBn7UWDmfbEmpLcCKBYNnPjrFwbCGAAhwfgC7lJ+Tmbe5gJcs9IgBp75NjMV3HoyOFjp6BZmh15AwEQQSTgT+XYfkRM1emNgAdibiAgFrLPdYqgvnd2trJr6Ac11vCpL8EyAfn61JM9WCDncs+AvAmWCdjwr9zbXUD+0ihprhZ5wd8uIG9ljsMw+8Hkf6y01By3kmYFcG24YiPkn3Y2bBeu0dvTFeDDbBGujKAOxXCUw1deOcVY6kC1aLsCaAKRSAyUm/NjDT4xwM/oCsiky8Tbev8DAAD//w46LFsAAAAGSURBVAMAPYpbUGqlAC8AAAAASUVORK5CYII=" },
+            { series: 2, indexNumber: 47, name: "Hunchback Camel", weapon: "bronze", type: "land", hasSpecialHand: 0, colorScheme: ["#fff200", "#ffc20e", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACCElEQVR4AdRUgXHDIBDDHSCzdIIMnwk6SxZIJSWPZfxg6l6vbc4C8f8IgYnfyi///q+Bx+3yeNzLE+BnD/LUCXDx8n5f1wRXbI1Ms1MGpH5R+2ycPyPT7SkDy/W+FDsAcsWml10LTxlYp3+f/X0DvFwB7tc5xwGPB2cf+V4/PIFWYDP+sJtnfFODVdsxQptnaGBzsfBX08yr3T4uTCiBJnJRi9BGA+P2GRrgh0b/dxMst3XnEC9EFbVczJNGLdiToQEvXy5l0Zi7JDSwhjECoVoLfvR0DejdvY63J4iaQmSL1DnQQM0jq2Gsa4BJAQLq0eC4F70CP2rE9TAGqEYBNDYXo/RJDYwcawHeCSIkyQHlItb0Pc2dAV0aiMUlakUlxJ0RsQg5oFzE0GuuaUkbcX92BiLJd0jEuPYUrIOGJDlqEE1lHe4MRHHmtsaShXRikK014PFELLQjzn5ngEEWEuRduAnnyQRqEUmqpAaywtiF5/iOCY+RZ7WMZ5g20E72HTlv647GUwbq7cZNL0RPlTkC+ToHfPRMGZDASzi4LyDe5FU30cwbmBA7U3JoQLtLlP3yOffS3lyvOTTgxT/B5wzwf06YA9+dc5WwltBg3BwbcCFyoqfJHBF55xFr+qGB7gcFwv7exRFrtDXsaihbxl9CfmB6eM2vXa+O8VqUkOEJJPVfDh1N+AQAAP//m0YEewAAAAZJREFUAwBvV+ZBtSuRYgAAAABJRU5ErkJggg==" },
+            { series: 2, indexNumber: 48, name: "Pillaging Polar Bear", weapon: "bronze", type: "land", hasSpecialHand: 0, colorScheme: ["#fff9f0", "#99d9ea", "#990030"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB8UlEQVR4AdSUO1IDMRBEtQSQEhGT+RpEPoo5Ez4KEddwRkxEahKjJ+hlGEujXVEUBeVG8+lptfZ3kf74738beDi8nMBPLuLQFTgdX79tjAlqI0aGDExX19Pu9nLej5jaXFgRDBngtPuru8TGgJjain1n6moDXG6md8cnlgLF6pXiwn+rDJQNNtu0f347ky+13Cucs267sMpAW2a80zXAicC8xeGxhOXEJUpfV+SzR5kZQBwhNGAFbCxBTADlWi3XxurbNTRwv7mZLHkk7mmEBtiQ10wgT5ttKshJFk8ghx81ejkRnzWn4S80YN/tNR8ay7UaNSdNA9w73V8J5tNOiQcNZLXMSSCHSfXCyQXNoJE5p1yq/poGxPYCbMClrYGe5tiUWeWttWvAD0oYcQ96nt/LmwbsCe3JqLdEbY8ZcqE10zTAAPcR6EHSiih9C9XEYWUWWJ6PQwOIMFAT0Yb0bUwONCMNajU0DSAANOSF6HGZAbF4rJZLD1CvoWnAk3ngVKsJ2prlaqa1LjKgpxth0BKjB+hrhjjCIgNeoCZeq/m5Wt41MCrMZktmuwYQ+k2EBpacoGeupxEaQJx3XCBfAvFZe/zQgBfweU3cc3zuZ0IDnkweCUY9ZmsIDfBxqYGvnxejVuNS81ybhwYscTTuzb0DAAD//4skG1wAAAAGSURBVAMAcCoKUHkDsboAAAAASUVORK5CYII=" },
+            { series: 2, indexNumber: 49, name: "Squirely Squirrel", weapon: "bronze", type: "air", hasSpecialHand: 0, colorScheme: ["#f5e49c", "#0b318a", "#ff0000", "#fafafa"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACM0lEQVR4AeyVvXXCQBCED7/nxDhyQEQTFOIWHFGDi6AGIrfgQtwEEYEj48QBvk9i7q1W9yORkODnYf9m5wZJwEO48d/dwP0KpCtwDuEMpjyTp8M+UofMXG/I6Ku4ODgnGfg97APwhH5t/MqBFmPGsCNdzgCaJgPL9XYBGAItiOjj03qbWjZPzUsiHTQBZ4DLOCQDamgIGSCgmY3MVNtcPSK7zAC1tMmFkQENFFlGSPVys4tlXz2u3gLoqxDsLJLO7GpWilkD3unzZhcQlMjq9VtpirYHl500jInXjK3uP2ugm1xeJIwg7/Dn672b0P87fgRATpMZHLjU6pOX0DTgFyVOnwMAObAz6iloGjh+vhR1TvFqgBKhtqudogF7zxAC8bCFFksRDlwgjtVST7FoAIK9vBLhPjMD8X7z5JN20ExcmlaD2qNqADICgFzQQaqJvscOYFZD04CW47uNn64QeNCA+or0ALW45C1UDdj7yL1FzPaoLTQTl5l65DkUDfBDwwICgFzwNX3fowbMpEXuUTQAkYcJkAMrJHH6NrccdgGcEooGWJQYeU6ASw1yM+2goTzHKxqAbBd5sHiqwWi23nbfD8wAXDjAalB7VA14surRIfEXkp7mc+IkA/YdTRWfujPJQO5Qe+9tnuPWelcbqInOmV1twF5im885HG7TAOJ8zgWWahCPyG6Ny6xpACGIAjVQrUgPqCb6mp5H0wCf4xzsg0ee49DzB/q6acAvzK1b/H8AAAD//xij/DoAAAAGSURBVAMAnisqUNvlySQAAAAASUVORK5CYII=" },
+            { series: 2, indexNumber: 50, name: "Sabresword Tiger", weapon: "bronze", type: "land", hasSpecialHand: 0, colorScheme: ["#ffd04f", "#23b08f", "#fff9f0", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACBUlEQVR4AeyUvU0DQRCF90hIKQEJEjKXQAemA2qgEkpAdIAjUkpwRgISJZASmf3Wfr7R3M7u2UIiseV3M/Nm5t27H/ss/fPnZOB0Bw6+A5v1chO9t61etHOwgWGxGjhRDfSiE0X8LAObn+/pVS9Wo6bNd2x1Z9ezoWsAoeH8YrBLJV8vSygHmxciJXbYTZ1P00BT4OZ5lLb5yJasqZEnmgZyv3yvXh43oBT5UHvWlmMW5NHut2ng+vUpAakgKqT3e9GJXDxRDXaB6loMDVih2uL1122yqM2Ia2mFBlj+uHwj7PF59zB9GffdbeJnvMZ2ajyGBiSEAFA9rqaUuQLLkWd+YAeoJtYQGuCPRgv2BRPXi3bHavm90ED0fHV1COVnmwA5V0uPXIg01CdWDWTR6T8f0xnqccJclq9y9QrpDlGvasDtTkpdmRq+Fj8nVg1wRQABe1t5lvCAngUcYEa8duGBeBsnBhDgBQLREgK2Z3N6FvTQAmjbHvnEAKQGWaIG4sgBPa4QkMMJdlY9y2mOODHAAqBpMfc5R3NoAqtJPjEA2UJ0gohvadGbZaD2E7KczREFNQ7eY5YBv/SX9dEGePlkxObi5sajDdhbbPO5J9Zc1wDi/JYttOyjnSFn18/4umsAIb8EZ287OVxtznO+7hrgt1uDF6rNwPk5X3cN+IVD6978LwAAAP//QTq/IgAAAAZJREFUAwBlbyhQzycfHAAAAABJRU5ErkJggg==" },
+            { series: 2, indexNumber: 51, name: "Bludgeoning Bulldog", weapon: "bronze", type: "land", hasSpecialHand: 0, colorScheme: ["#a3a05d", "#464646", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB1ElEQVR4AeyWXU7DMBCEDZfgRuEOiEg9WqUg7kBuxCmKP0sTbZz1XyrUl6IO3p3dHU9qB/EaHvzzNPD8Boa/geU632oYvdPDBkY3aPWfNvB5WTZtG29kZzBsYL4sL2h/XWeWBMWqJbLz17CBTt3uti4D0zTdAKq3EOKH6IhYiJ8Q6AXHjiPTNGCFFHPmy/fvpkYMB6GePCb30DTgDYljY6D8zNo0MH+87XTfp2mX2ySv5bO2V3HVAH9waJTQuq7pDYADMQ+AWIh56tGMNFTP16oB2yxhuPxJc872UquhaoDzBfb95skAovHCceMJAxxISfzFDLMgpsVP0UAUT69UPokg2G0W7wkcyPvJS1rUigYoetDGdjPFqnlzJa5pwJ6nLpQ2+lnXABAXpx44O0vuwTWACILADulJ4ahxGQExHLA95NQAmuQ5XAM0cYmABnWO2oAaTwiImVFt643/O1AD1D0UDWhjb1gbWUGP06y0bL9i1wCDQE16IuU9q51BC3hzrgGv8b+4UwY499yQx+U9Xn7KgCd0lmsasGepTe7hpKG1aYB32EKDpdX2Epf6xFcNeK8Pot55w1GTsFZPQzXWqgFeHQ8MevB64bxecVUDarpnbc3+AQAA//+FFkGWAAAABklEQVQDAHRw9kFF8wPIAAAAAElFTkSuQmCC" },
+            { series: 2, indexNumber: 52, name: "Pew-trid Skunk", weapon: "bronze", type: "land", hasSpecialHand: 0, colorScheme: ["#a58adb", "#333336", "#ff0000", "#fafafa"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACF0lEQVR4AezUwW0UQRQE0DW5EMEiS5bIg4Oz4EAQHBBJ+IDIxGIj4EQae1nmWSrr0/NnZmclxAVLpa6u/3919cx43xz+8d//ADc9gafPPy/n8/kP0G55m7sD5KDvX3+9nhee2mvhCrI7AM8v3x4th4eH9y+wiYbvwe4ADvpxej5YcxA+aqltrbsDnE7Pd++O9y++DgUbmhq+B6sBjsf7S2f28cPTTO40TUsearAawI0YgGaYEl0eP729c6BbA05T0wNmgIf9ElYDGGLgAF84Q1pWOlRNTS/drNoaNgMw85HFxI1xWgUtNVzNLL6G1QAxcJvOZLrhAbpaZuLR9dBWA2gIvOPwrXVP72IA79JjDBw63fYOcJh6DoCDGuCZs0490/dJnaMNMA7E1Liaxwv2gIOaPdQZ+1qzD9oAKVpHI5pbAQ444BXdbK3jbQC3gc6AbrBDV+NBh25mFqB+tZUbzr4zi5Ye/VD3lavBLADRVwx4MA7nQPXK7cdeXqA2og0Qg6UhJmoeL+C0DqnFc+yZBTAAY6OPDEZ93OuBUecJoz4LMDbY138h5kCvoEG0OhOtWzcDLBlVvfJ6yJJeezYD1Oa/wW8O4ONLoMqjXbveHODaA7b6bg5Q32/lWweO9dUAjP3IVIwG47724jzGnrpfDcCgNuPR6nsPT01f0GmpWVcD+OHokAMZBLSul5aebl0N0A3s1bb6fwMAAP//7x49YgAAAAZJREFUAwBNKkpQizvewwAAAABJRU5ErkJggg==" },
+            { series: 3, indexNumber: 53, name: "Panzer Panda", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#fff9f0", "#ff0000", "#333336"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABsklEQVR4AeyUTW7CMBCFHTZsuUsQix6gh+4BukDkLmxZpfkCL4xGYzuOhNpKIB4znp83L47NLv3y5y3g/+1A359G4I8OMeDjtfXmHRhv19GiNiiXbxYwDOfuMpzT8eNz4cQnRm4JrnSaBcB77E/p8v01i5iH408xcq3YJIDhDMIC+dhWbBLQOqRUXxUQHbRuf+g8qY1FPb5e66IAiFSIHVMahbQ/JAvFsdQKnkNx2aIA+1RqSLdrmrEE7g5bAu6r52/I8UynogD+WDjl1Mvi16BaLByl+qIANULEHZ+esFu2XcmHnbY+AWqopeeRKppdKasrZmsYML8CvQpj55wtnvyIYwov36IAqiAA+KB0qGyOHkBPCVUBNNcOEjUea3uyAuzTWHLeLbAxfGIA3yPHRV0oINdgT7QdZn1bwwAhxxkKoIktBPggIiYPyFvYWvLA5q0fCqBBivFp4EAJrLlqWCBfeSxx9cIln7hFKICCXAM5DcQXophyJa6sADVjeQJsC9b2rBLgB0fkUcz3ReuqgK3EDFvTWxUA0SvxFvD3d4A7HMGfi6iGmK/z65fvgB/o1z8AAAD//5g7pioAAAAGSURBVAMAe2fkQXwN1rgAAAAASUVORK5CYII=" },
+
+            { series: 3, indexNumber: 54, name: "Leapin' Lizard", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#b88b0f", "#0b318a", "#ff0000", "#ffd000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB4ElEQVR4AeyUMUoEURBER1OFPcseQjQ38x6aGJus9zAzVzyEZ1nQeJwH1lA0/ft/dwMRFIru39VdXfN3xtPpl//+noGXx80s6PJ0Jqo2GodvAHHgwpxBr+Z8zIcMxCVRJDuPznQNjAodaqI0cMxyGepplAaubvcnEorx8mK/ljxfi99JpUFLaYCGFl7fNivl+VocTEoDvesb2dHTKA1wfcAXXT/dT8Br5NQAucAs0DmLpQENIII4UK3K4ZhRbxWHDJxtd3MmwiKQca2Z2Ns1kAl9vt9NQGIfy5lckRxks9QdpQFeoOebh7V/Wdr8LGk63+4wtvYwiwZcC6UBDSGk5cTlySYgnsXkcIrMkPfQNODO/YVaFs+IZ4DTQp9xLfGKTQO8XIKaFVWPUbyi86rFmBrwJ4kDPHms6VxxLc3UgASJ+l3JdZXZItXUQ7/Pcs6QGkBMyIaowROB55wdcILXlacGIHmJgJ5IEQ7A8YSAnJqgXiIcEBdj0wDDNGt45IWKPZqVFnoRqQEGgZrjC8QicYqx5jNoAfV6TA14gwt5fSQfme0aGFl0TM+/gfIG9Btm37E4rt9zzt4fOXhHaYBGxIiHYGS2NKB/MnxCgLNDprxGTq/AWX1ZLA1kAz+t9fq/AAAA//8T25DbAAAABklEQVQDAEBlLlADBmJAAAAAAElFTkSuQmCC" },
+            { series: 3, indexNumber: 55, name: "Killer Koala", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#fff9bd", "#c9cf25", "#ff0000", "#b4b4b4"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB+UlEQVR4AeyUMU4DQQxFNzSIg9DQpQkHiKi4CEfiIlQoB4CGjiYHQamWeaN8+Gt5ZzYICYRA+tj+tv/8zG5yNvzw37+Bv3cDTy+XI1j6ap10A+NhNwLEiQ44P9hzenNYbIDDJOJ5i1OvFRcbmIicbydlLQq3ubqvKf+u1/sVsYfFBlbn20/Bw67qPjy+DaAWR46DQeUW/Osa4FkCtDAByDN4jx2QzTnXNOACyok66PbmYgAIwtEjV4w5dUTTQLxKCSu6mDhF9aKGeMWmAYb8xaIWnl/vBod4j3O7PtM1wHAU2qz30BNELu5Mhq1oGvDvO4LxOks9ANOjXjErzjXEeWwa4Io1zEtGXsWPXznqDxSu9gqh2ZLWx0Scw6wBvUyYABJQzmFlZgDk9NVTrrrMjHAZZg1kw3DlylcIA2pADuhRn4JZA/pUiLkwz9R79AEcPXLgO/TgMqQGJMQi0KJ4auc9jzPqOc++kBqgyYsEyEEmwKcE9B0+iwbwvuezBiSiZZ6xL4qH85xas+KlRS8iNcAi0HB8i3WA+sTI+Q5agLmI1EAcUs0hQHWM9EDkW3XXgH+SllDWW7LbNZAJfyf3uw0sucLebfQ0ujfAD4mjd6DPkvfmmwYyAbjsxweOXjww43ymaYDvbgYX8DybhfOZmDcNxOGv1L2ddwAAAP//RkumbwAAAAZJREFUAwBMlhhQd06BBAAAAABJRU5ErkJggg==" },
+            { series: 3, indexNumber: 56, name: "Tarsier Tyrant", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#ffc20e", "#0b7a64", "#ff0000", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB/UlEQVR4AezU0W3bUAyFYbmvDTJLJ+hzJ+gEmSIDZIpM0An63Ak6S5A+u/qMHIG5pqS4aBsEiIEf5D2HpChZ9ofplT/vC7ydJ3D8cX3E3iujBnt18V/8BA6fHw6aMlysVC+1tD1evIBBGezCzpVoqaneVn7RAsugTw9LuiSdtpjryZ8tYF69YM15F9Au8PH25hjGWadH/PN6mhBTPnPyoj3FzBGfpGehXaBWaARNxNX3r47PoPHAECHfol3g1939AbVxHOaCla1as1BrkrcLxPwfcXOBxy/fJlhk7Q54I6nVi9Gv580FUpghBj/e3U+Il0iDGlp65PmPkI+0C/i+4TvW0L3d9PliE+QjtSdzxhrndoF56OlvV8HYfHV7Q24ZPb1Q7IbEkXaBteLoudB8nmBo0Y7OqDfiPNcunjPaBRihDvG9It4YeRj1nHnj+3C2gAKFSKNIF8GDHHLIUWvdAA88VP9sAQVeIKSpNvDBNxxyWqXria8+/tkC1ZSnKS+Tc9WdUbVay0N80cVF+tkCxJhyL04GiqB38MAT9cqDufXi9HYBxt/EhTOv5rTNBcY70IBO77S1WnrYXCBF/zK+zQX89Man0mljTXfefAL+ByoGbF0oXu2R61tjdQE/l7Fpb5j6rqabpRarC/i5dGjaouuhrfWsLrDWcKm+V/8bAAD//xkVBeQAAAAGSURBVAMAsnE6UBroYJUAAAAASUVORK5CYII=" },
+            { series: 3, indexNumber: 57, name: "Black Panther", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#333336", "#0da699", "#fff200", "#d3f9bc"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB9UlEQVR4AeyUMU7DUBBEDT1cAokLBKWgo6ejo6XIATgHB0hBS0dHT0cRkQsgcQk4APhFGmu03m///AaQQBrt7uzu/PHHzmH3w3//Bv7mDSwWy6/46mRcnMnq5hvgQEcmXsM1G6gRr5lpNvD6vBn0PR/IyqTZwNnFcjjC84GsTKoMHD2sRy/dnH7tTtFASQD+7fZmdD4cvVGjJ0p83+qKBmiyCGJOzYEOOMA8iDl1hqKBz+vVgS+c3t0P5cvVyS4nAgpFcp+ljlpwQtEAAwgJ1ICDzh/fSTsioCDSIwfaI1KXUDTAj4wvbbeb3Y1wkPj+yTqgWj3Nio9a4olFAzT5HxMl2B92MPVE9JjxHWnAZSga0KKiL3MQ6F+2DpADnyHXriJcRGqgFy1+94gJElNNFBdjSTM14Mu6UjhE/Ek/LlcdoAfoMUMOfJc6w8gALwxCgi/BUSuSC+IUnYcDaItXHBmgwUsHyAWezK8YweOndQfINccMs6qJaAHyiNSAnJaWEKHHFQNyuAzqSTPOjAywAHzQn4gn9J7n3vMdZtAE5I6RAW+Wcj9IMxmn3lRsMjAluG9v1kC8yn0OqNmdNbDPgS2zv98A37hj7il9lnxufvIGsm8XUb79KAxHL/KZhs9MGuC7zeACnmezcD4T80kDcbilntv5BgAA//+uqDBPAAAABklEQVQDAC8yIFCXM5CuAAAAAElFTkSuQmCC" },
+            { series: 3, indexNumber: 58, name: "Torrential Tapir", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#fff9f0", "#42d914", "#ff0000", "#ffd000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB9UlEQVR4AezVMW4bQQwF0FWatC58gBQBjFwjPrdzjcBAihzAhdtUyj7ZDCguZxSvCjc28D2cz88/f2cl6NPyzn8fAT5uYNcNHP88H+tnt+OqptvvCsAoH5hrvbdgdwCHOBjUe3FVgL2H5rl9AX7eZI+XuuNeOtP/+wJ8e96adtxWtWEuBvj+eHuEPHn4fHPIe3XlzIDeDNMA2SDqWDvT6MVKk2v7immAH3dPZ08aZtb731//ealxiFjVUD1wGdMAzB6+/Mr6s9rBcEamjVkeidqU0wAMTFjhVN89WU5Yn26B02b99/Dao4WVWmJVdxgGqMl9yNbDDvePt0sclA1xejS0uVe9cm8YgMj1QjV0kP5qvIA6ODWYMQv2I7QBVtPNj002cK0dsqbWI882APNqEHs9T9VBL3R1HfU2AeLHxQB4p2GWezjvHU7167clNDizwMc+9+xhEwDp/YF6BKbeO6hHOvzMqw0QSfOgd+jaGYKepwM1Dmho1RmhCe/obQIQQgis1bD2aSpXZ2iALofYBCDKqEajJ6TTm83mXtQXA4Tw2tVTe/rqsyuA916NOi5r4vAaZBrAtWaTqDu+4+grH0H0YBrA1yvDwP8gz6hnM8MArqoOXjKj7zSdFy0MA7iqDt41GM7AQTeDy9pcDwNk0TX1pdm/AAAA//9G8NPNAAAABklEQVQDADYxFlAxeKeXAAAAAElFTkSuQmCC" },
+            { series: 3, indexNumber: 59, name: "King Cobra", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#ffd000", "#ed6fe9", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACB0lEQVR4AdSU0XECMQxEfSnh8kEbtJQKqIUK0hJt8BFauOgBS4TOss+ZZDJh2JMsrdaLMbyUP379TwPLqSxAh0cOtB6JwyewlGLv2xZLNOJ6N0b/OWSADcup5C/rXTk5Y9UZMrCa/oHCkIFpX6anPfe2Ahb0nvaBo0YShwyg8bSBHXkB5fZ66t1K3eewARRrG9VqcHsYNvBxOC+ZaKuXzQwZ0AaKXlQ1Rd9r5U0DiHl4ocv7+bH0OUU/Q04tQ2qgN4ggGwPyFlpaqYHX424CLeEtPTRAxk0NMLDYX+38titAIvNxR+sKqxVwXdhDPatN830ODWul79RANng5fH33UTXrZVrMpwYudskAJP3Gr5/MnYB9twXAAbP14JBrBg1ArYaqARNdRF4N2z/ffD9ecR5r66lG9LNek56wMpARNYCo0Kqp52NNe2XAD5DrSMkBn5ZYQ6tX41NrGoiCi/0qGIp1XxOHWjRPLaJqgEHgyV6Yujfhc3qeG3Xoe6wMICYB3WQ/oJwe4oBc9VpEE8CN/ZUBicmEBrh4yntRXDQAfOmSe6wM0BRZw7q9EoajWszFoY+OAK+GqgGIGkSItcAGQGtFakBrYpylFpEaiMTfWn/bgL9QPh81uskANxhsFYcLtvC7BrwQOciE6QH1fa5ajF0Duow+1o6cmucojxvGdddAHBhd9/ifAAAA//8JjK+dAAAABklEQVQDAOBZBVAVbJrYAAAAAElFTkSuQmCC" },
+            { series: 3, indexNumber: 60, name: "Manic Mandrill", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#b4b4b4", "#bd7f3c", "#fff200", "#ffb780", "#709ad1"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB/ElEQVR4AeyUPU4DQQyFHahoOADngA5RAB3bcJSIhg7RcRQOsClpUDpoOENuQEOFQr4VD5lZr/cnQlAQ8bDn+dnzdjOTHfvlz7+Brd7Aw83xGmzzLU42UNf1Whv7XNzQOMmANnw7ujbAZuLIx2CSgYvdZ7s4qayJLh+zsbSjDfCk89Wlze9fNKPJ4ah9kQOT0QYGzh0sm2Tg/GBlQLuQA63HxF4DXDOBwXtPd4QGi/dDA81i80816YkbOv1LDZQDtNZGfrI4aVQr1+IVUwMSRbG5BdyET0SaIVxq4Ox2OSuHnF4tDQzloxm+NzWAkB8aodx4tm8GzH3QSE90pTBNDUy51+UufTNSA35YVVWzzdN++0rWr2bA69Cg9VyWdxrg9Opk+4GLx9oyaDP1MINZ4svYaUBCP4BBrDOgoZeIjjxDrwGadZI5VAAuAjVATT3kGUIDuFdTNEibSEOMON/rZ6IXQgMMEyQsTzN11XwO57XUBGolWgbUrEOkBr5PoDV1nhCQi0cDtCaqrtlwQssABTUodr0+tF1Qj2YolvqWAYQ4BaWYNU8HyD3ggOeUMwswW5xiywAFhIBcT0I+FuplFoj6QwOR8Ke4v29AV8jHrrfhNcq7tOLTN8DBkdBHrp5fk0ccfNcMaiA1wMGJQGOESAsXacWlBiTaJvb1fgAAAP//wPPexwAAAAZJREFUAwAhnCpQXuV/fQAAAABJRU5ErkJggg==" },
+            { series: 3, indexNumber: 61, name: "Pixelated Pointer", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#b53b1d", "#2f3699", "#ff80bd", "#fff200", "#990030"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB90lEQVR4AeyUsU7DQBBEz0i0NLSkoycVTUpoCD9BBf+AKCgQ/xD+g1BQp6EK3xBaGlqK4BdprPWxdz6bAkUK0mjn5mZ3J07MXvjnv12A3RPY3ifwPBmt9QJZLq20DnoCWkgFLFOF90HvAFr0sThs9ojrrrkoIL0DaObR5DNMX1YbwKX3rYMDsPzpYBwAvO9i+ZMBTk5nawEznGpx/bUMwGpweakCuodkgPe3m0oNDIGr3n7fhfnFCGkDOBoHeVTR7CzOFskA1mS5FlHH57MA4HhU4aXIBvCSL6fHAcQL0ECsezOsJxuA1+px/8H6W7weHkBLNAd6mWGkXzQbQG4G1YsqIC1V8QB6Uh6rZwPwnQLbUN2fVfPXq41U/9AC4IDGHVygF+js1WSAenDzv/5ysWq9EQzlE1qg5Xq85WjJAFx6YCk6Cy3QdAcvhRuAHw7DAN+nhqHD0akW0uThjl50YHXuBDcAlzx2kGpkKD5gOWeBXmYAaXFNBqAZs5r5fnnkaACdTwjgaAAPXrh0zUKL4QagEcRmziwAcAs0YDVxZgGdbXUDWANcnwheitKeogClS4f4BgXge4+XeVrs8c6DAniDhmqdAfgF85qB0iV4Ab1dPdkA8QCGgtRQ7oC9j2fYO3g2AK+OBxo9eF40zystG0Cmv9Su3h8AAAD//z87PtYAAAAGSURBVAMAoC8SUNuHUpEAAAAASUVORK5CYII=" },
+            { series: 3, indexNumber: 62, name: "Pillager Pig", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#ff94b8", "#ff0000", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB3klEQVR4AeyWjW0CMQyFc52OKTpBxmGCTsFcXeDqz8SRL3FygVaqkEB52PHPu+dAEB/pn19vAe8TePgE9uttB+13lxho42f7hwVs+bJBysM8iFkOfxUPC1glXq17TsDnpeePYn1VF3lOwNetI0pRrK/qIksC9pR2QLdZ/BaWw4I2H+1PBXgi70dkxHyN98lFmAoYEmT5DgBjxAe2d3bIUWqmAuS+ySqVkeGhIMqVmBDIKpvATAVwz9O1+cJ9C4tB3OmSXuWYFE0FJJtOiGQMWWMmkoAKsVsVbhwkAgwF1M8OAhA0T0P0ACmqXOK3ayjAF+pEBOQk9L5z5wExIHE56gRs8tpDfoIlAdavv/VMZbCE7cVqjcUXbChAJtl1Epmsm0RiQ94mp73EBMoZNIYCqGMS4BurL4TUHFBitUaS+HAA2YZrKIBmOobN5YHU6Gmpc3yzXuM6Zu+7UACN4F7i3uUztqtJniNW5Pt/BM1l+ZV0Lbham0sNAYdQgMtX93CVcv8QfXipPtSW2MgsCxgR/Da+JCCayMe8b4KimOW8XRLgG/7afyEBXDtwdgTUgLO6kl87AU/o/UJSjc95vxb0zpIAu8fVprRx/1N54SvyZas14pf01CwJmDKcJM/SPwAAAP//Zby+JgAAAAZJREFUAwBZE7VBhm4dlAAAAABJRU5ErkJggg==" },
+            { series: 3, indexNumber: 63, name: "Rowdy Rooster", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#fff9f0", "#00b7ef", "#d6497f", "#6f3198", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACHElEQVR4AeyWPXLbMBSEoTRpo2Mkx0inLl1yiiR1Gk9OkFzDJ3CXOiewj2G3rmh8sBazQ78HQrZnPJ6xhkss9v1gSUKi3pUX/rwZeD13YLm9WcB6y1wezhbXyAGujfjUHcgarhf3hbIaz4FvGsgaue6cpkKmK864aYAkYff+w0786ssf0eLcc3rCgAwNjK7g4/nv3tZ5F49k1IOUoQESHK3ZxXXbdFdfzwoLA3jLq7GW0yZzp9SAGu3+LcVBW8XggjTPhRNXDL5GamCduHzuj7+HuHLQhSOJco+hB0NqQJspaqYr826Rplr18nzx1IASGNUILnz6/lO0OJcY1Sjm45QBL3huPjTAbQUsqtv449c50wauHLRJPSmmXGpBDaXH0ICqepPDfvf3/7eihcphXxpqIhqxOm+7tdfU2OiYMuANaNwWcrFyNGKVnnTMGTjs21XRmc3VF7q4LgXUABqxSu8Pq7kX4nNqgB8PGoJ1KRqQDgeaa0RrqK9yaesxNMDibCTgBeg+j/g6hx5gras2NEBQBRQzD8FtBmGwFNWqVwk+oQEKQZDfJY877wlGiAOTOg0N9KiT+qZjowl18y09PIr1pJjMG4jrn6w+3oA/e+cnWnq8gRMXytLnDNRn/KCBa86VGGmK2ThloP2Y1D8kPlqPRj0m3gIbp00D2XeYRdTbuTTGrJaYsGmA728GNcni6MrJxk0DWeGsvpV3BwAA//8gA4V6AAAABklEQVQDACh6CFApMNrFAAAAAElFTkSuQmCC" },
+            { series: 3, indexNumber: 64, name: "Musky Ox", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#5e3a21", "#fff700", "#ff0000", "#fff9bd"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB8UlEQVR4AeyVQW7CMBREk24qjsE12FXco2x6MXoPtlyDYyBWqR9losH+rp1sqkqtMsr3/PnjSWrgZfjlv/8Aq97AdDtNEdb8NxcHYGNtdHj7GIDW3hPXuncHyM19Y6/ZMNfC1dAdAAMZs+HxfIG6gxqOhTTUPegOML7uRzc87Lbz0mvIXAtXQ3cADDAGn+fLUxh6cPQA614sCoDpdB0mQO2AA8711N0B3nfbp42PJzsDVhMCbc/maLoC1AwJATDKUZvJdc0AodEmt0nrgAtnk9SvHwPwOl2c12PaFOS8r1se1QAa1Cu+n/LN8H36r77Fo35wKdCIFlaz8oLLUQ3gQhnBHfbbAVAn4wFQwwFq4DOsa+gKwFPJQMZs5qCvHrXPsK4hDOCHx43S004YsVEEetJQ+6x70hOKABLq6STkXnCbxIJ04yr6iXRO3omeryIAHQ4RoI4wm95Ow5AwryNx4vACqSyuMICS+pC4wiEgXCsP53ykCMAAcFFUo+GHB1BHGufQAOeoiwCQEXTo6EVG4lyHtoXuAC2jtf1mAD5WQBvwhL4WD0fP13Ba1+7NALVBN/e6pq/xqwPUDJfyfyOAvmh0rz2l+rrXdM433wBmPkAN59/z1HD0HBHnfepmAD7fERh2RBo410R1M0A0tIRrab8AAAD//341XUwAAAAGSURBVAMACAgmUNVwwOkAAAAASUVORK5CYII=" },
+            { series: 3, indexNumber: 65, name: "Tanglin' Pangolin", weapon: "purple", type: "land", hasSpecialHand: 1, colorScheme: ["#5e3a21", "#ffb780", "#ff0000", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB50lEQVR4AeyUgU3DMBBFHQZgh64BC9Al6CRIlZgkLFEmYI3uwALBz8mPDufsOKkQQqLSz53/fd99u2nvwi9//g387Rt4fjgM4JbXaPcN2ME232pmt4Gtg0r63Qb69+vc0+Yz2ZjsNnB6OswjbD6TjcluA439V2WrBobLeRDoZnPWguWVE1UvxaqBvIFd9y+nuafNrQZBvoazqBqwwp/Kqwa647k7vfYByEDkAmDNyQF5OJ5DQlqEtId9UdtNlBuqBuwfDM3cDg5ptbaHIw1VA3bD28e14zTxOw3A1lJ+iTcQgQZt4hoeroE4IL35XC+wfRjACYF4ckBNHJG9QP3gcrgGchFNxNGMNRBHDqhZTrmirYtrMiAxkZMSPdRqnh6uyYCuVi8UgwANADkgl0Z74ASPWxigAc0Eb5NtuFaXltj8FfAWAzYJGFNOtHWbU/umfYy/DsgJw2cYpjSFxQ3AqkHemBrweI9DmyATiokcHwsDNAJjeXxydbzlYGTKTzSAPVJ196ELcXiKIqe4MDDxxUDzUrFWK+1ZNWBPoiZbuPzU+XrVgIbeGvPB6lc14J1UG1vjWo+qAYbo/0ARrgbpFGtaalUDNEFk4XGqezWPk55YNcDP0YP37wfnaeEYVELVQGnTFn5N+wUAAP//TQ+lWwAAAAZJREFUAwAEahhQlTB7YgAAAABJRU5ErkJggg==" },
+            { series: 3, indexNumber: 66, name: "Slowpoke Sloth", weapon: "purple", type: "land", hasSpecialHand: 1, colorScheme: ["#fff9bd", "#42d914", "#ff7e00", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB5ElEQVR4AeyVMVLDQAxFZRo6Kho6Ou5BDsFhmKFghqNQcAhzDzoOkIoulfFbIuZnV7Idp2CYSYbPar++pO+NFy7sjz9nA+cT+L8nMOz6QbH2Mq06AQbXAyOu1kT7ow2UQS+bttfIlVybmWSONlC6PfZlOfgVcQeCeJMauP+4HhRevvl88LBZNae1xI14T6QG3u+23V5TFpoANjqIPXAODYBz1L2cZ00NkIzQv24N2PidK+BAVDPFTRrob9/MwVMsGYCmaKV2tYGpQnLdsxmwEz7pCay5UpmPqV6pgajZ+LSdyXUbnszAr3bMFc1IdJebg5d4pMKfRQaaZuOgYqRewxHT5CID3oLr5dcNjhgQA2I0xKAxDllh1oA24e2mnkGAGBADYtcQK7L3YNaANiH2a0msyHjVRHFoIHOrPAO9ocaq8TynA3yva2NAv0MVRjHHDaJcxEW9GwNaqN8/xTwFQKM5j8kBtGiA54gjNAZ4IprY7ud//vBlQ11Y8hUZcZXE+pttTVljAAUmWBneXdmiPyjoMzAYRPnQAEIGA2I9UvZAOY3JgZrzXuQUqQEVnRr7cF+13yIDXDOFNtBYNcSay+JZA9G9zprV/JLaWQNcoxq8pMAHEoNax9412TprICtcys/pvgEAAP//a8gtZQAAAAZJREFUAwBf4/hBUxYA0AAAAABJRU5ErkJggg==" },
+            { series: 3, indexNumber: 67, name: "Ardent Aardvark", weapon: "purple", type: "land", hasSpecialHand: 1, colorScheme: ["#fff9bd", "#ff7e00", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACDUlEQVR4AeyWO27kMBBEqU18sLnSZgtssMBmvpIP5mjcr6wCWvyJEgw4saFid1d/WBxxbP8q3/zzI+DWJ/B8f3vWb67H1TW9+LKA2UazXG9zuMsCaPpKXBawvTw2BOTT2neO/CouC2CwNnp/FDYGJXxxJC/ilgDt8fImoyX7ItaX+wLW95hWLgl4/i1PMJ2UktSCRA3doQAGGO52jC3/H6YLPpzhhGOsudoOBWz/ylYXNzEiQJM4ErNZQwEa8SddNBH78vvTxuACFO2c/LyMZuw1cwEUMQDgXwE94KRnKEDf79QcJ92AqFetJd6toGjnqAHi9qWetdMyQwFcLFXEcvglw6lmiHqeQ8/knowFMIXGQJxUf/1kIyYl4AMFsYSvmnBlI84HCbp5ugLUnEr9kdpqKMNdgw8ido1tUHrqmSJj6QoIfvz446eCmw/wM08cqEUE1Tx9AR4WNg85XKbIFS4ewN9HH2qCUz/5QJ2LdGkEUMQFAhTMwHAwq2Eeec9zDAcaAZAuchNcjZzLfl1H7LwtnNEIoAi4wFaXiItmOGFrPqxqzYf1gcJtnkZAUzEg8ibZr8t9GItw7LrbAvK7z74HZ8umIHP2bwvIp86+B6/aJQF3NljtWRKg08T3uBgiOovz2E66R50K0EnqgXXM5JqLWL3kJjgVwAXjAjVI/zGt1Iw0nAoYNa7yZ3UfAAAA//+vK/2BAAAABklEQVQDALhd80E0inOAAAAAAElFTkSuQmCC" },
+            { series: 3, indexNumber: 68, name: "Bodacious Bovine", weapon: "purple", type: "land", hasSpecialHand: 0, colorScheme: ["#fff9f0", "#332694", "#d611b5"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB0klEQVR4AeyUPU7EMBSEExpaGiRaGiQKKui4CtyA43ADuAodVBRINLRINLRUIZ+lhybWe/4JK8FKu9Ksx/N+PHac7A1//NsZ2L4TmL4+J67N+cntpECzGLwVq06AhR6frwYFWuuimtdtYNw/GF+OHrRH4mjE0qTjr9sAvU/fLxkW8LRFQjBZZcDbqacFay7kVQYWHX456TKQ33pduxTTvJw3GeCGAy2+OLv/mSpHJBfAa6gaKDViYRAtUqq1mqoBS7Tx7uPY6PD0epNggsZMq42hAZ6p7qDnlmsuPegVGQkNUMDxGpjPOx6vD9+gCXPjAaTJ/EeMnJkOVsfIPIJrYG6avvdeEQvoJ1g5Ma8GLerpGqDAA00Au/JADHi1kdZkwHZmY9QM3XJsRCvBNVA6VovlTT0dE6Yz5jXMXQMEuMmAW8wcKNeGyjUHTg9AvYfQAMUUaDHPHQ2gs0MARwN5Dpr1gudwDdAQaLJdLl1A43CLWS4aoBeA53AN5El5Q1tI83Itr9Fc5U0GtGDTvGqgdSeesZbaqgGv8Sa1/29A33HlerzKNUd5dGrFE/De31JTL+b1UDNFA7y7gI8NgAM4sEZwQAzAARxYnjcWDXgFvVot/xsAAP//31lPnwAAAAZJREFUAwA6lwxQFnbDJgAAAABJRU5ErkJggg==" },
+            { series: 3, indexNumber: 69, name: "Zealot Zebra", weapon: "purple", type: "land", hasSpecialHand: 1, colorScheme: ["#fff9f0", "#9e109e", "#909090", "#464646"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABzUlEQVR4AdyUPU4DQQyFNzS06bgJRwgVDQU1pKMiRwkVXaCMKGio2BvRpaVa9lvJ0ltrfpxdJBSQHrbfeOw3ns2cNX/8d9oCVqtVB+YMcdIEUk1TXETYJAFt2y6670P3+fHWAHy4SEOfM0kARa6ubzED1B+II/5NFsDJrY/6xkXtZAHRBrW80xOwW+464E8GBzxfi6sT2G63nSFX7OXifbTEr2JEFIKqAN2LEI3xab4+rJt1D2JrbhauhKqAzWaz0AL3XzcNUG6OXxUQKd7ffQPIXZwvR4LhSjhKgJ8GD9D+cp+sz9X0orrkopBVAf7e9YQ8QIArAf13MJye5tKj6FYF+N16KhoBy9E142q2KEBPr+OnKbDi+MBitTVRRQFayHxGbb63tmZX4ddTcVHA48PdsEdPD0EjgA/wAb7BRJg13tusAB4SPjgTwUY4rIHiwGKs5nhRrHtkBfhEf5eIsxz14fTbIS4hK8CKmqUIH5qBWPH0/NoYlNeJKG9+VoAlzLEqPlcnJMCPn2LKpUae4tjnERLgN/1m/P8F1L6D0AT4PStyV8CbocjlKR8SoBvwEYNV0FjjqB8SwBg99AXkqfbrxBERIQGRQrmcGv8DAAD//3UzX+cAAAAGSURBVAMAoAvFQUAKz4cAAAAASUVORK5CYII=" },
+            { series: 3, indexNumber: 70, name: "Harrier Hawk", weapon: "purple", type: "air", hasSpecialHand: 0, colorScheme: ["#b4b4b4", "#0e758a", "#ff738a", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACD0lEQVR4AeyUzU3DQBCFNxQAfaQIEOe4AvogN07cQh9U4JwRFJE+oAHYL9JbTcaz6zUSP4cgPWbmzd/zep2L9Md/ZwH/5wTGcfz8retgd5UTGIZhRQL8lBBmA3ZpRxEgAkuRBZyHzeP7PDG8BZzHiQCrzBYyxMb4m+sBc4T1j0T+F/VkOvkdJwIoiHD3ekh2IP7+bUwsBlePu3R5vyt3iDw90SzPTQR4hb5BMYvlvz9s5TZtNHsigAlRIU/EkwFqOAEskM8pkKcW3iKaST4UQKLWQE5gMVDsrWbI+jxxVQBJGsHzzToBuM3LAVPA04JCZIdakN3JpYOzaAqwhfiIwXp8PG0TgK/VkIswK4B3GjX2cD29swI4XoGl+9s15gT58vEZFk712EJWnFkBvm/pEft+HzcF5CcrPy75Ha9otlz0hORV6+uJPZoCfDExw1kMiD3Ie64VVwVwgfiUBA2xvDjVYCOOHvHeVgVQyPsG+N8BvaDV2xQg5Qzh3SrWQI4bKMZSQy09irE1VAUwANDIQL9IOfLWJ6aWHnxyAD9CVUBUrIsna2vEydpcy+8SYJ9IC/SEDJdvc/SQm0OXAA3hlgviZMVjxfXYRQJ6Bi6t6RbAkeqIZe0ycVhqba7ldwvg89LxytrB4rDU2lzL7xIQDWSRBltfXNSjnLVdAviOI2hQlINTvmW7BLQGzOXm8l8AAAD//w2SYGoAAAAGSURBVAMAK586UHncMxEAAAAASUVORK5CYII=" },
+            { series: 3, indexNumber: 71, name: "Diving Duckbill", weapon: "purple", type: "sea", hasSpecialHand: 1, colorScheme: ["#cfc9b6", "#4f4423", "#ff0000", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACBUlEQVR4AeyVsVHDUBBEDwqgCSIyiGiAyAk0QgUkJFRAJSSOaIAIZ0TUYvS+Zpnl5qRvCc+QwHj17+/t3a2+ZHMaf/z3b+BoJ7CPGD7Ln+fRDCwfPVasNjDc7l4YW627rjLA4N3bNgT268ZHrDLAYB/IHjh3aLzKwOXFpvVnBWy0Ei9B18DtzfkeqOn723a/+9iGDySGIycdNUD7qXXWgDcg5lkzDOSGcAANWuU9FufrrIGX188TF7f4LIK7bbFdGjfkjGph2aNlxsusgVFSXxnoqFV9tmvg8ek5AK2G4xg+RBGX15sfGNmIQTB8otWoLmb+Zg34S+VHyXB6MgkQiyN2rfcglzFr4PHhvumvrjea8/3j0xJ24XcAiFKNeojP66QBvb25gfYMG9749h+ImMbKEQPt1QsuY9KAhH6c4mgM7m7OAxAD5bVWtcppnTTACwT8GepO4NVAqzhpnFdOnK+lAYbyDIGLPfamHruGPtp7LI61NEBCBdmEhsFzxICYGuWIK6in50oDNAQuzEfruRy7NvfJ2tJAFvm+etmUz7k8PO+pO8iA3xFFeVDFeQ2DAbqMgwzkIvY+wGNyS9A18Jvmh9R2DSy5mzXargG+ZlVj5z127RTvmq4BxHy/HXAVXENcaTLXNVD9eFTNK66qXWyAr0+F3KjSwGVd3ndPIBcs3ff0XwAAAP//iFUQQgAAAAZJREFUAwABdP5B1sJxsgAAAABJRU5ErkJggg==" },
+            { series: 3, indexNumber: 72, name: "Crooked Crow", weapon: "purple", type: "air", hasSpecialHand: 0, colorScheme: ["#333336", "#10a39e", "#e6ff29"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB/klEQVR4AeyVLU4sURSEe/AkaCwKPYRdsAMwKCT7wCBRGJbALghjQWHRJCygmU/UpPr0Pfd29wjMvKRy6tT5K/rd9zjq/vnPwcDhC+z1Bdbryx7s844XG/DDzueaWWSAg6/vv7tbcLSdMIM0DbAYxJ1XF8cdhwE81pkBUY951YAvcM4SDhOBc3LvdU4tIjWgwa/7u92MNAT/qZ17j2ZdY9aRGqBJC4jCyctzD6fOYQBHUw0OpBMzVA1kQ+gccKAtQdXA2ePTkp2DmdaOqgHfxCLg2s/NbQdcowe4VuNFA/5oWAa05OP6oQPKFdGAcmaAct8pjVg0QCFis3lbAR4doL59dB2AowF6ANoUVA2UHpk0fjqHdB1VTpRWiiMD2afSMEfhLHagqQYvobR7ZKA0KE0LSoekqUczrTgwoGH+DoGGty99Ja6og+TOyYHPsAug6wYcDAzQBCjQyGIAR4vgCIg6OTPMAjgauwFcGBiQqEgz8FzcY9aDDrw38tQAg+6cQeVw6sQI9ahOLh57yVMDFH3wuz/v0UD89Rs17/Ud9EVUDcRmDoOoK6cGlE+Jkw2crj5H/xKyA3N6Jxvwz1o64Jr3ZialTzLAQv6fBwySEx3S6AHKvafEmwZ4xSzUsHNpil6DM6taFpsGeMUR/rm1GC32kauexaaBbHCq3ur7AwAA//98kQX7AAAABklEQVQDAKmRQFDhwvHXAAAAAElFTkSuQmCC" },
+            { series: 3, indexNumber: 73, name: "Frenzied Flamingo", weapon: "purple", type: "air", hasSpecialHand: 0, colorScheme: ["#ffa3b1", "#005080", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACAElEQVR4AeyXzW3DMAyF6W7USRqg5+ySXXIukEzSkVx+smnQMmlJufSSwC/i79OTrNjIh/zz5y3gvQOHHZjvz9nj7IxaXU9NVnsQMF2/Jk94aLzcZlHMInotlWqUGPElosl1IeYz1tzEDgIIRoUIISeP21Rwfxa3fGFbXANbrdp2RZzkQgEkInhiT+htXxNx1LFUgCedfn4F0Mx2F+gW4wMmLTHdeXxqATbwXPgeqQDR+wwJsIbaxjec1cBl+XrMBbh7WjcN+Q2eXIDNAoHZ9fi4iYA6bv5DD6zZydgWoI3z96cAnWz3E9XU8dJJqQXH5DHSJYA2O0jTRVdNAGADbIXlrFZDzastYD2MG5OuUPR371dYbI35HeJwivZufYnRFlA3KinkwFLYoGdC67HxXIBOVgpZdTEGvqzHOJLWUwFsbYF76IgRR4QuVx5Odnij2jWWCoCAwwTW2uGBXgBX1pwK8I3YIQErBkHSepjc7KBMUgEUp406KbeGGlBsjWHXSDnWwlMBa81hYFV1MIrVNZH/kgC5fkmBMda+xTvG1wR0EPeWDAvgvZ+Rn+WynmEBRqRvJb0WTw29Fnv0+2UBoxNl9d0COOWAFxFkfrs3W19I1ABqetAUABnYkelEOx+nitEDSJ2hKYAHSQiR7b6rMYU11/1/DAk+TQFBz1CoVfwHAAD//zEOHA0AAAAGSURBVAMARccUUMuNxQUAAAAASUVORK5CYII=" },
+            { series: 3, indexNumber: 74, name: "Fleet Footed Antelope", weapon: "purple", type: "land", hasSpecialHand: 0, colorScheme: ["#bd7f15", "#ff0000", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB80lEQVR4AeyV3VHDQAyEZQrIWxqCwjIpgJJIQ3mjgaDvnCWas3w/8MAwk4zXklZ7uvUfvNgf/54G/u8d+Dgdb3p9Yi5uNE7fgdZmrd6eoWkDb+froo2IgOFEeuQzmDbAcDZ6PV9JC8jhSjF5+pEB9ricjoSCmBdi4tQ04G+ZHxPTEqkP8CNp3KmmgcVs8dU3YPcfObiX3wEOiCAHzBCXxaYBBmgROVDNc89yNEC9mIuLsWkgdf/py4EHTABPzeBAKR6ndMajbU0D6DYv2AF2hQ83sFZ+Dj2vbLMWskLXAHoGAd9sseQq0RR4Dw1aULjOacgAM/SdLwdbLu/rJ+jP1wB9OHrk0pL30DXAMwYa5Bv6YeX2cpUCfW/4QWbGGrBW++emAZ/mx3YxgzNslcYdSmdI2zQgUYzxikf4qMnyXQP8c9FmxHpx5GIuHZzALPF13DWAkJcJkIM4CJ43HpDTB7Um9ujXaBrQsN6Qeii11mgGXIZdAwwAWuRv0o0Xjzry1EAcGrRwAB6QZ9g1kInh2ICYodXL9HBDBuIVsaiuMy7ToKsxZKBeRB03iDm9GXQN/Gb4yNquAa5G3zP5CGb0XQMM06YxF1fHqIl5rVPdNSChoobyB0iccvXEj8SuAb7hGtowbgBX66ijJsu7BrJFM1xP+wUAAP//0MQFUwAAAAZJREFUAwAVluhBv0cAYwAAAABJRU5ErkJggg==" },
+            { series: 3, indexNumber: 75, name: "Pugnacious Penguin", weapon: "purple", type: "sea", hasSpecialHand: 0, colorScheme: ["#fff9f0", "#001eff", "#333336", "#99d9ea", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB1UlEQVR4AeyWMU7DQBBF1xRQQkMkGkSDOECiFHQUcJTkTOQoNHQUUXIARINokFJBCY2ZN/JYK2u9ng0FQnLk7/07s/Pne9eJchD++DMaGHdg3IH/vQPT6bwGv/kp2XsH4sYxLzWzt4HN47rtFfM26CQ+A+d13dWb3czbUMzbYKKmzUXEZ+CtqoJTULVZS41O8jefAdNAWHj99VFvnh5CDGKSCkVGpaDMgBTcP+/q1et3SIGcLCm6fAaaJzflxdlE6fJqEgATi8EVnRqNJW4uA/XLZ6I0H/LWDBqws1XB5sVave+0u2x5AEwsFmSNrpWg1QrtvQYNVJfHQXF0UqGyvD0Ni4tDBXNgc3LMK1mrNVLLPIe8gYFztMa5BkPfirwBU5ZtNeoenTVZA5wl6DZle4kxAuOMMagFcazLew3wAulZynnC28Lmyawx8ZY3OWLUJOtJRug1wBpEGBFiVMh7kXoqjUlO18jNakxDQsmr1wACIK5CTBtJ0EahwTgja4gZ0AA27469BroLU3NtuMePVKxVZCB+Eg+PG/XxIgOIzK7vAoBjAsCJAXgJig2UiHvWugzwn89gosz7ODlg+dzoMrDdrqsUTDiVI2b53OgykBMYyg3lfwAAAP//ALELiwAAAAZJREFUAwBN8uhB/iBE0gAAAABJRU5ErkJggg==" },
+            { series: 3, indexNumber: 76, name: "Ossified Orangutan", weapon: "purple", type: "land", hasSpecialHand: 1, colorScheme: ["#9c5a3c", "#23b08f", "#fff200", "#8f4a72"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB30lEQVR4AeyUwUkEQRBFW++COWgMnjwZgSCIeDYA15sReHMNwLOIIBiBJ0/GoDkIBrDOG/hS21PVPT27KILCt6t+V9f/1dO6mX7559/A376B29P9BVjlGU2+ASts41Yzkwwg+PmxlyzgWsWpn2QA4fP7a873IIbrk8ZfzQY06c3JxbeUYu2xsfM0X7DW0GRgTFNqAMKsArmHUQaYDNDg6vgobW2/Ei4Bjr0lckRSNSDhvBeC4mwszq7vh7MNm9u4aCAS16QIAxqKI7YoiVNXNEBBBCtoY+qtKG8ALkJoIJ/+7O6lv8a3g1kCecNONIGcJy+ZCA1wUJA4+e7znGVtcA3k00utm7C/Bc9EN2UCqtGZ2uoasIfs9PCXD49J4NsD5azUAGvExuxZVA3YYmIEBXKgnJU8R3cz4X/FZgN2ylyotJfXKm8yoLfhCYlTjQRqa5MB20yCcDYmF0rfXjUDA9EEfEe+MeAwjxMBQAzHHqCWfAwGBjhEQ0DsAZGc9zhqMMgamXIN6BZkwjtsORsjBjwOPsfAAKIgL1wl1y14PQYGvKJ1cJGJHzMQDVE1wHvgz8wiamZriDkb1YovGoga0FwNtHoce1EP9kDRAI8xgv2mxFEdPEIRigaiQy18rfYLAAD//8ZlN6wAAAAGSURBVAMAO5sAUAtlEisAAAAASUVORK5CYII=" },
+
+            { series: 4, indexNumber: 77, name: "Blue Eagle", weapon: "silver", type: "air", hasSpecialHand: 0, colorScheme: ["#b4b4b4", "#80715c", "#00b7ef", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACDElEQVR4AeyWsU3EQBREDVRAL2RIJEgkuAACWiCgA3dAQAsEFGASJBJiejJ+FmONdv+u13dIJCANOzt/9v9Z+w5x2v3xz3+Ao57AOI4TOOYtNgVgCPBBvneOhz2Ab2EzQNRoeLyf+rPL7vaqXwBHS4dFZ1PPZoD0gPbT5blo53wVG8muAH6jt89xHeHcPauhQooBeKTg6+M1Oz48vZwgMhjApcEFztIDSEvXcoCfIRygkVaaRbdEo+ZezoAoHDooBqDoUGM05+yBa86p1dAcQE2Gm+eF+hBx1RZD469qgIvru6zN8P7QaRCDASY0anBH1MPrxQC8U4w0ENgDDZrfbQdcg8vPyl694CnCAP5h8gM05KZoGuycGh40B0+Jnq6JZwHcyEEgM6tuD0+R1jgL5PPe0rIAKkRr3/fL95/a3IxlgXP3LMWNX1mA+dGuQzhb2zMY4AM1b1RHywLwgeE9CpiAbqY6mgM/NTR54eiC6uhCFoACDQAciHsDmlIDzuXRGepwAE8RBoiaSPMGPHLgGty9GuwaHiELwAEgw2+t9ARpvyxAaijtvZnzkr+kHxQgGhhppaGuNwfYM2CPtznA/H2f+KsG4H4LOBo1AEdrQXMAbxZ98iPNz5R4U4A9N9Kg1jObAaJGx2gKqLUaIBqkg63rVo96gPkfU95thDRA5JGWen1fDeDGQ/nWuW8AAAD//ygLI58AAAAGSURBVAMAWVU8UHKI7xYAAAAASUVORK5CYII=" },
+            { series: 4, indexNumber: 78, name: "Spark Shark", weapon: "silver", type: "sea", hasSpecialHand: 0, colorScheme: ["#e6975c", "#19b370", "#ff5e1f", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB/UlEQVR4AeyWvU0DQRCFz9RAYguJIogIEBUQEJAhcjKX4owGyAgIqAARENEFshN6MPut9E7jubm5sw8JIYH0PL9v9u0Pso+aX/77FzD5BNYPt9sptzhZwJTF4f5tAVOPf9IJ2MWtz9B9sNcVbO9O64OTtQspJ2trmT8oYP6y3AI7ZHN+YcPq+xwcUIvJRyrADpCf7VA19bKu9Yk9UgG+eXFzXVPz97dq7Ydy6rG1zE8FbK5Wsz7y2clxY9HXl82AkwrgdX98ftHXgh0CEmV4A/DJAXwBLjMUR7YjgDsTRGBQWWgGlCu+3FYEiZKvfXCIgeZhiS06AhighjFHrF5vI66drf6OABWstUT5ZTdti3zVKFifuA+hgCGyjpeFAcOVw4/QNzMUwAAGCsSCHhU15eSrZvPUgHLehgIYtLh/nAFLIL8TPz0364KdnPt9wAzgueKEAiiKAJkY8LCwAv92QDHW9oirWdQ9QgEQgW0ud12/iLQAde4V4NOrmnrJAeoA3yMU4Jt8HA2Lcp4XxaMEsKP15Srihzl64YRFlxwlgIGONxiO5YwSsHhdNoBVuXNsBNXoBVGPzw0K4Cjtboj9EMW2BsfG6vF2UIAn/HScCmAH7MQfJ3kvxOfgwPV5z0sF0Mwg7CEYw00F8Kj64AX19ZH3vTZOBdjGQ/0h3jcAAAD///Jw45sAAAAGSURBVAMAt9gYUFwtsGgAAAAASUVORK5CYII=" },
+            { series: 4, indexNumber: 79, name: "Sailon", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#b4b4b4", "#00b7ef", "#ff6600"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB80lEQVR4AexWUU7DMAzN4AQ7DyeoqJA4KRIq2gk4z06Ahl8aJ67tJG3QxM9Q3TjPz89vTYf2FP7572Fg6Aksy3LTJ+dhmuPthwx4QqPYsAH5iWV+1MiwAQzCYATy0Thu4HK9vX7OZl7EqGYKHeC4ARL8elvovr08bMvwd20D+EQI7pU5Y3qVHOQIzRH7ugHZiByRGufnl5SVZYOBi+CyzBlLa91AIsjl9nHOWwyUwQXJYay11g1M59Py8x0QUmAzYCJDiETY1AhDLyJM5xNt3atqwHy9tMhEw1lS5sCm7UCjBU6KqoFUX5ckeHq/rvvGPXNST4MaS74Bemny+c5zeXwkmgdchJmUxxpxojLdZuplnUCaBJnLNyBpulEMINEQg/myBkz3AlNhDeimI6IDvdYAOcSby0HbcukBpVIyxWEdrIVUMtcAyvH86AzlGwwRDnBkMI6VcfSyDmN6tQbSI0ezJJs9/Y/guhwKzHD5B0zSBofDGqCKdI2coMBvM1bsY0AQETfBcHIvPUnOEzUvroFc5USdK0xIQeTAmB5X1RMx59Y3sFPI0cZX1Px21Ly+AfGIc/NfsCyyJn0DK+9u9zED3rF42A7bfQODwnH2jt6+gah0v1vbwI5P0LXW0WgbwNteCz25xgOuuWLfNiCIo2mv7xcAAP//ZyRy+wAAAAZJREFUAwCH4e5Br+rwHwAAAABJRU5ErkJggg==" },
+            { series: 4, indexNumber: 80, name: "Anarchy", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#a36426", "#eb4a15", "#00b7ef", "#fff200", "#ffd1b3"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB6UlEQVR4AeyVsU0DQRBF13RA4IQC3AItIGqAjA7og4SUDDpAQrRAC07ISC6gBLNvpX+aG83scWchEiO+d+bPzJ/vPVs+K//8dzJwuoGjbuD5bncAx3yOVxkYrreTxZiAW2NksQEWbS/35erru9w87BuI4agtNfErA5EwC8vnawEtdpujGdfS0lkDEtK5fRs2w8eugKZQX4gBtZoW9eqEy9A14AXIwfvFeQEvj/cFIE5ODZALPhevMzXQG+SZS4CT5Z6DF3paqQFdp0T8yUILX7d5Tys1gADvDBBHIpUrgLpF5TbkzALiDKkBe20SkTBiNeZocPG4vBXri9Wq6eQ/NUCXrph4Dex8ZiI04JsR8gZqz0jZWGQ0o5o9QwO2wcZ10cHlfOctRT7pmRSDJDTAM7eoz3h8rvCBTqOoARLNEAOfw4HQAIXbp/0GEAN+cDgBSwAxIAbEQL3ZUnqE1IBErAkNLTnnTIQGWAq0iGfvP1TUEQfE6uWklxliwefiQwMqctpBhOH8QsupB06zmCSPMGvAD9kFS2q+V3nXgN6Bmtec0shuoWsgWyhRW484W8/iroHMdSYW8XMaXQORIFwkGnH0zqFrILvWiI84lmc8NdA1QMNfo2uAa83gjWV98L7X5l0DtnFtPDf3AwAA///OUv7oAAAABklEQVQDAAEBEFAutSWZAAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 81, name: "Tiger Burn", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#ffd000", "#546d8e", "#ba3d67"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACAUlEQVR4AeyVzU0DMRCF1zTDNQ1wpAOoAImcckkhueQEEhVABdBErlSz+LN2Vk/jcdYbDggpKC9+fjPz/LQ/4Wb4479rgP93BcbTMPLYPOwOowJtnGrwXqy+AmkzJA56f9rPZ8DRqM1iJ1kdQH05GKi2lq8OwGXnkK/dlqXAuNWK2Pl1NgCGIPK6P77MsvJZzIRZkGnz0wygg8qbTq6gM8pd2xAGiAbQPu+24/Ppe3h8O3ifolGjh17fEGn0hAE+jvtEsQUOIoQCrdWP3vIMA7QGXje3lAZby2b6Ms3WSS5L63CKzQAUecUMZqIHZG0A9AKrZS3ZHCu1FpoB+GGxoZR/fOAYs4LMWQocT4hpmoGrF3tFGIAHhvurjb/heOEZeVQBtJFBEA3mvllWPouZMAsyLZ/cNxYiX1UAqVXUG+T9ALQx76tDtO55FSDfz6RNuueBAlbn1QO2pwZsr7Nofo9WBRjzv1RMDDR5UOvR6KHXgDeaogpAMeUnGMANfhhTXjsAtz5W34sXoOYRBjADHeJhAmZAjUsK4KbTA2xvNfM03dYqAAPAGlh1WM2pKbSmM/TgCeCKKoAWjasxWmTkNT/DXISuAH4wetUizc9F+4sCREaXatcAi1fg0nvLLemZXQyAkQfvfo/me6L9YgAO84iM0Hwfe/RzWAxwbrinttTzAwAA//+FL+CYAAAABklEQVQDAMB5BFCUCEJHAAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 82, name: "Condorassin", weapon: "silver", type: "air", hasSpecialHand: 0, colorScheme: ["#757575", "#eb5215", "#8efa00", "#ffbdc8", "#00b7ef"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACM0lEQVR4AeyTPU7DUBCEDXfICSi4CjU0NEhcwmnoKZJLINHQQE0DNZegpsgNaIy/J000rHZjkwjRgJjs7OzPmzzHx90f//0bOOgGhpe3ARzyFPc2wMHL58cOwPc1sbeBo8/TbnV20QD/NQN93w8gHtC/3m4l5xKZAcqruPMGfIHzapl073WuusedBrwR7svW6/URGnDuPdSmUBrQouX73bcdm/NFeyT+w4PTT82bNUvNdeelAZq0wOPq5JpS+/U3Mn7wJoyho+a9aMrhGVID0fH9w6bTIkWWcTCAA9WIzKAJcaf01ABFlhC1SBFNNbjgmnoVvaZ+xdKAGq4uF41+3PTtilsyfrDUMUrtn8dAL4lm4RV2GmAZ0MK4ZPG06UDUyZlhFpBXKA1kg/66+cHOvUeHZrtUKw3QoCuGC+Nh2/dfmmKsZfPqVSwNMKwmePxm4zuvcucckV5m4MA5uSM1wILq2nidVONgwEI0avAIauyMOnlqgIIP6GqrA+gX1KMZdN9F7kgNsATgHPiAuOvOVSeiA3YBtIjUAE24BnAwXvXgz5Ia3xLA6QH00AsH1AA8Q2lAjuMwB2SL0GJNs9pFT0RqgEEQm5VntUzz/qqeGtCgR65auV9xpnmv6lWcbSAe6rlzDoo5WoXZBuK38tw5B8UcrcJsA74gOyDTfKbiswxwpaBaEnV6QdSzfNKAFvENAUukwQVp9AB0afAKkwZYBrQADpQrooEqlx7jpIE48NN8qv8LAAD//09C1akAAAAGSURBVAMA8HBYUH38kzEAAAAASUVORK5CYII=" },
+            { series: 4, indexNumber: 83, name: "Ground Wolf", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#e6e6e6", "#006875", "#ff0000", "#7d3416", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACPUlEQVR4AeyVPVLDMBCFFQ6RIqegyAk4AFegDSVFSlJAhwtKfA5OwinMMcx+yq68luWfeDLDMAOTZ63e7j49Swq5Cb/8929g1Q4877dtfnIlLq8pzVcZePz8CnHBw7ENAmK40gJz3CoDiL7uH0JbVxHEcGtwuQF544/729C+VeG030YQw7Ebl5qYNyALJlGNeePT3TbRxHCR0JpBHInhY9qAiTEC6WfbZQj+zC22XNwJrY8xDSOYNjDSBL17eY8mWJwYbg2mDdTVZkqUhcFUTZjRmDTQNE3bnJ56+pvDsTf3kzxHLxq+Jo/LBuz8tBohe5N0zuTqKghPFJFydbWJPZHVR6apbBga0ELvfLfbnY9ChNNb1rK4qWgcc/X52FKP1CQt1RYqfYYGNMXZAp2uHtAAYwJ9AwWHg2Z9Q/l6dZp2LyynmUGv8n7oG/AZizNRWbj7IWJhYLWFF7BUHHMtIecNSFH6uAXShZOkj3sGCwtKee/TGVBxbq9Hr1oEyRnHwsDmMSc1NmeES5CvNZxHZwBWm7nBAMrDbjOC302TUsRwEFZDbEAL2NyPnQFdnKSJ+CbjyAOf8zE5X2s5z1Fj6AwoQwPQaRq40QDC8vLPYQM8Rw2A86AHeI54YAByCiVxq5/KWU0+LjOgFzQ153MSOZfPqSlgmYFC47WoZQbcBV288MKeZQZK2+k5H5vDEmc5Ny4z4BquHf4BA2Nb6c/Yx36LxnpdzfwOIF6CE4lhqQYuJscf8wbGexdl5op+AAAA//+VCsaoAAAABklEQVQDAPcxBVCeZm9mAAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 84, name: "Fly Sailor", weapon: "silver", type: "sea", hasSpecialHand: 0, colorScheme: ["#e6e6e6", "#ff6161", "#00ff99"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB3klEQVR4AeyV0W3CQBBE7XQRKkk7pA2+aSO0k0pIGeTeibHGyx4+W0QREojx7s3O7o2Pk3gb/vnzMvBcJ3A+ny/xylz2+xmXaWKPr5/rBNw5eXx7uLXYfAJ+1J7/qYH3w6HOzzYUJ00VdjxWnwAbaZOf43EA7ANHjXwNugzwW4Px66PO1qZ1cX2IQ4MWXEt3w6KBOIg3bU2Mtdib9d01EAdcPr/rjLgRpDhp4ECcAedoGqBxPJ1GHa03kbOhAy6CXmYwK9a0vjEgMY26VBqkJsWiGYDWioWbjDODNTXNJhduDFCIwt1uN8Jr0DUnVBS+Rh4lr1r1wIE4Ew6kBijQoCNmLWgDrT3GmvqZ5TrPZwZaQueVlzjNUV7i9Mfk+SQsSeRnBko9/cY3k6gMG4DWHls9riGfGVATl86BUBCvtWLGi1NEqz3IwcwAhARcIgAncKOVMzTLXUOdGYBcs8mFGwMqaJCa4blUxHtwjXo1K+tLDdAIsgZtQJ03AuRoVSN3UAfOKU8NqOixXLbphmcbOedan5Hl3Qay5kdwXQayN3LOc5nKONU8dhnwhkfnmw1w+WTGc3G9cbOB3g2WdIsGWr+l8577hi3eNYsGON4WNKhVh5emFRcNtBp7+SXdLwAAAP//SlCgiAAAAAZJREFUAwDNExRQaeDGPQAAAABJRU5ErkJggg==" },
+            { series: 4, indexNumber: 85, name: "Zariganian", weapon: "silver", type: "sea", hasSpecialHand: 1, colorScheme: ["#fa1e1e", "#b4ecfa", "#ff7e00", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACB0lEQVR4AeyVMVLDQAxFHWbICahTUVJxCBo4C4fhLNBwCCpKqtScwBRhn2e+R6PVatehoAnDR99f0t/vxAlX0z//XAJsfgXmw+HUeteyXmtnOADmYH887lpm9JgBrRmvDwXAEHMA9ya6pscMgEvPajcARhjKxHJpqrYHZ1e9Vk0DZAb0LFoHMNPqoacBGIgQmUZatOu1NAAvIwvWXPz680hrgbh6iOLyQIuQBtDC+8fX9Po9nwAc/efuQFkgTo8ZAF+anT/dAN7o8WU/oQF5wwE9aVQ0aoZuAL/89jxPOogDADNo9OBb0A3wcH87AWuqg55u9hOgJw0O2AHwDGkAPUgYYFYOW78FC0de4PiO2aVR/liPcln9NgP4RT3N5bA1hHdTT7Pqey/p1DCAX7CGPOEslkpZIF7q+o/K7jDkPdFAFSAajDSWy4F8PKEVop1IqwJUTk7g/QXIPPkAjgbgW5AG0Muoau+Aw3jyAVyHakY7qur7mgawwzK2GncPrAaPZtEjVAF6iWXCHHcP4NKzGs1VATCwg+J84wHb52MHrMYMsJrnXAthAJocHL2UmJenf/24MQvQ6MEt8MDLapY3AzCULdIfQc8jDaADuDvx0Tq6MxRg9NBz5s4OYO/Q8q0hugH+Yj6y2w3QuiN9/OhbzvUWdANgHsEfEs2g+Tl/3Q3gF7Ze9+Z/AQAA//+qTQKrAAAABklEQVQDAALWLFDHNdA9AAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 86, name: "Rainbow Samu", weapon: "silver", type: "air", hasSpecialHand: 0, colorScheme: ["#ff0000", "#fff9bd", "#ff7e00", "#fff200", "#001eff"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB8UlEQVR4AexUsXHDMAyk0rjzCOmySLJXiuzlLTJBRnDnivmHABihQFG2ijTKCcITeDxfUuiX8s9/h4HjDRxvYNcbqKVUxp6T/LQB2fgTWyMEAz5zbTLADSx8k6ujUgI2HnNgdOGqgXq7LF6xC5+DpmLvaYtraugyTasGZOJ2KcWCBWAX/UKBgSQ19ADvfFtLMb/1Dbzy4ZuhKLgF23impb2+ARCmt3fcVy6aYKxQRhqpgXrF8fqeZtnTx5x5vwXMdRaRo7MVWtTM6KkBI9afu4nsSSZswDC+ZeGix7VrcJFE38BJ//maIWworpC9YxhZet4g4CeiFnESfQNGpgCCr3E6l+UGxtNMDrl/To72sjQ2wKnwXeW4oYaM+3wZRsbRn2slzGglTakBPkXL9pp+W/axYWEQS2jPuVKcb1mNndQAHqMWimnYsNQ5xTpzDK0ZR2ZY07B6HCFODbCBjz0xiBkLAQqzwYgY68ilBgPl9OoaMJG1Yf7XM1JlFG3WtFBaXKkBDjIW7FCI/YgDxSH7DC8EkBoIfYdRIGIjxFrE1u/lzQZ6Anvrmw3guFX7cRHc7Cw1/GCRI7jp95abDDwiaBttnRka6AnFesRmgLlXZ89iaMCIbY7HL+KWN1oPDVA8i1Y447DW8tr10EA78Oh6xP8FAAD//6NRO4kAAAAGSURBVAMArRzIQR6n3OIAAAAASUVORK5CYII=" },
+            { series: 4, indexNumber: 87, name: "Shool", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#757575", "#ff7e00", "#c25578", "#8efa00"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACJElEQVR4AezUMY4TQRQE0F4yjkJOCrcg4hQERg4QASKwcMApiLgFpOQchdD4sfpWTU+PZ3CyWmlXW/ur/69fXR6P9ll74J+nAE9PYNMTOH1sp/99V7furAZgdPep3Y0C/HizP8FoZsfuaJa9qwEYMKoF5+K73e7069uhAV791NjNc2myXg2QwuRMvzw/tpdv9/+A66VmK18NwBjKMPmrF4cGoxkd1GypXg3gEdYis5+/93VsXz9c6ITT0NY0PaqXdRiAge8V3v/Zpb65QOPdZ3/vUbxm993W7PIAntXPOgwg9fF4vLz5jHLJRSOkJnd48cx58VkASUHqEqkjg9ffDw3ME72WF09IHT4LYBkMCz5B8Xrp8uLiNaPNHWeegCdmAaSUOEXFzxddvpbq9XVJw5N3r58FkDLTJ8/l83/AyzH5pXkmuYvzPrcnv5MAEoK0E1V3qEftYjCuHj4CT96Q80kACUHaFCX3dkP2cD3Al8Abcj4JUAMp/XuF6qk+hXoNvSY9+Pa7swBEUkKKe+Oc9bzXeqLAk3/qZwEMS2TBuQezfNtxvV7nzKP8VGf9wiwAAZRAtehRQl7kxQMaMKMBO3pQflX1CrMANaiaRnp1VhkCnjMcqo8vYTXA0qKLa5a8elvrzQG2XrCme5wBRt/tqLf26c2vPoFbTRkX1jwWA+Ti6CXLefK6OHdG89ItBmBQIC6eVR+yV7zvO4+wGGAkvqW3tvMXAAD//0fwL5cAAAAGSURBVAMAl5wzUP38xyMAAAAASUVORK5CYII=" },
+            { series: 4, indexNumber: 88, name: "Brain Mouse", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#b4b4b4", "#ffd000", "#a04ad9", "#16d953"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB+klEQVR4AeyUsU0DQRBF78iogIQUkdIHzigAQQckBC7AAQkdgCiA7OiDFJGSUAHhsu/EP41Gs7t3hxCJEd8z++fPzPd57YPun//2BvZPYPETGIYhAX934YDnW+dFBuyCOXlrOfVFBjabTU+TgAmgM9Fr4GpYZIBBLADXJ48cR5DDgZFY8NI0kF67FM17eL+aaJtPZE5SoTeXpv+mAZQaRBTgLcQT4RXJa6gasEOUP23fOnB+vJnmksMBSGl9ztmjasCLWXB7v51oFgMR1NDoPCdWDfRnXf/yMXTCnIFopCcyA66EqgH7FdMNv7vZdZe703FeHt4BDnDUyKUltzM4e1QNeDFLALwW25wagJuL0ACXCPD5AvuOjg4virNtjR56AbNKTaGB/O5622AHfH49j6XMjZEX5ar9cIkopMJvQmhATYp9vozkiuQgD+0AuSCNonhi1iaiRWiAi8MNFmxDxFEv8dQwA8iTexKhAYR8hoBcwJhyFka5NFqkxWhtzhkUDWiQTDCQC0VTDWjQahl5TR8aYClQox3CAnjqPAVADqcaOT2RCXFoQGiAQg1aaDURR52FgDzCKgMaVFqq+pz4KwNzFrQ0qwzw+frBEec10XmVgWjQWq5poPXOaveg1YvppgFEf4mmAb5CEbypSAPndf7cNOAblp5b+m8AAAD//80Bj50AAAAGSURBVAMA11cCUD1P4Q0AAAAASUVORK5CYII=" },
+
+            { series: 4, indexNumber: 89, name: "Brown Lion", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#f0b63a", "#962a71", "#fff700", "#fa1e1e"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB70lEQVR4AezUP05VQRTH8Xl22ugCXIGthQmdrUtwBWpH4jJM6NQVuARbOhIKWlbAAqCB8sGHcF5Ohpm5c19DSHjJN3P+n9/ce/NelSf+vQh4nk9ge1O2Lfb5nFY/gcv/B9veolGu17NawNvPJ+Xq+KCJXG9RL75aQAx68+0izJLtXXDS2FvA9d/3uxXZ3gUnjb0EtB51KzajYVFAfO2/Pxzef3x/Ph4W1MPFIK42+vgjhgIMiqGG8J349/NTyYgh1+jNvnzNUEBdzP9+dlQwsuVmGQr4cX60MchNnGCDiM3rUsAWQ3n4hR0zHsKPjqEA1V9/nRawYRks5oMtBj70gD2iK8C7y/9scZO4WWto5KJWjRlmsVt0BSj2keUzBlt095VL3cMW40RN3SvXYihAg0ExNN/EQovBVouo0aNXbMSigNxsaH6vFiNq5NSEP3M2BcQtDMgDvU8xi8AGG+yoYefePFMuaAowLMgDoylOCxB+feqNOc46z28KkHj35WQDduCdgp9zYctBPpBD+PXZFUC94mjuPUI1NVEbvTGrruM3BWiEghb1LdW0YuIwC+yapoC6qOXHLeWyzV/DlIB9Fsz2TAlYc6O1tS8CFp9A713mP6Bs51fQ6801iwIMb5GHsFs1YnIjFgWMmmdySzW3AAAA//9+RV7eAAAABklEQVQDAJ7DIlC0zcI0AAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 90, name: "Grencats", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#e6e6e6", "#1e67c7", "#ffe100", "#b82553"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB7ElEQVR4AeyUPU7DQBCFbSQukYJcg7QcBi5ARYNoqLgAHIY2uUYozDHCfis9azIe765NgZCC8jz/b57XNlfdH/9dBFxO4H+ewDAMJ//xRDnfE8WrT4CFFhF5S26xAJZCfPtyxGTIVy0nGy9VAadjd3bcWnZ43o4r5Kumgp9V3tqqAJohAjcP+yzGL6JHOXroBeRrKAqAbPu6Hzk+Pt9Gn4UWKtgeZuFQLbJFARqACBDbBcQWqtELbG3OLwr4et/1h/Sshfu7xzOeVO+ATdKjfmyq97bu/aIA27zZbHrIWEA++ZgM+dSS39ObC+nyq0fAsJ5z4so/FmQnuNianYMnaM+p2ROYG1I+2UzARX6y+Ssh14pQAJ/Q8Wk3ctg7G5PJSQs7kNzJb27GN4YCaPq+HjpeIkAsEAPFsuSAYqxuAstNkfOYCKCR5bxIwA7Yf7V2mfVtD7Msx85hIqDfdvmzEZEXISLyHDPAV95acdmc9ycCaIAQ4AvpWZ/0ZvsaPeRUp5dcC0IBftAT+ph+n7Nx6SSaBLBgLbRc1vM0CeA5+8Fa3DrTJMAeJ4sjcp/zM8xFaBLgByPyKOfnoniVAIjsQutTW4LVApYsKfVWBczdnX3m1rfL5mZtT1UA5BEsCX7UQ45aCVUBpeGWWq3nBwAA//+F54xGAAAABklEQVQDAC5UC1AVpb0wAAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 91, name: "Fight Horn", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#9c5a3c", "#22b14c", "#ffc20e", "#fff9f0", "#990030"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB+ElEQVR4AdSVTUoDQRSEZ3Qrolcw1xBPILgUgjs9hQfwFIK7gEshC9fBa+gVdOFWxv4Gq3l25vXPEBDFSlfXe12vemLMXvfHP/8vwP3ydADpg0MDqV7aNz0BDbhZvfSpsTT1pHVvXx1AxlODcjVvsPTqAFODZaI1DSI9t1YHwCQXYs5wPJsCcIAQAM5QAEcD8BY0B8BcQ+HClKZabp0VgJt+rT6jLxwtCg1kVgD895cHLCMsH4WGl6oAJ0/nA6j1pRfU9BcDWCP4sDkcw1w/rKM/3NZUQBP31mKA9ODi/SxKDAYSbE1aac0G0A1uHz+2fBbPV51F2qAz8kjr2mcDvF2sexlp5eDr8YalC/URbKTB1csaera+N+gRsgFIf3d5pF6G9QziUQdjq3do1IIeB3IWj9g4QdwA9iBG+pwzaMJnlFSjlzOjGF6sV9j++nUD2JvYE9KDaZTFVYuFH+LplN0AFHkPBfYCGpzBAC4NDtgL7D1kA3CIxwngQP/zMWcPxFVD4wyA51AMYE0t90xtj+VefzYANwDeYd5b4NU5C7w6ejYADR6sseVev6c3BbCDwh/fIFPLbY/qubUpAEZ8vgHcAg1YrYY3BbA39cxreuzZpgD24K54dYCWm7X0VgfY1Y1Tn+oAfN5TyCzV2atWWqsDlIy8ekn/BgAA//8TN8TCAAAABklEQVQDAHSoFlDyp7ReAAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 92, name: "Hustlebear", weapon: "silver", type: "land", hasSpecialHand: 1, colorScheme: ["#757575", "#cc10c6", "#8abdff", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB5UlEQVR4AeyUvVHDUBCEZSogoRMSCIlIGQIqoARRhFUCFRAwdEAICcXQgdHn8b45nVd6DxGQmJnl7nbvZ/HzcNb988/JwOkTWPUJ9H2/A/r+kgPVv4mrDOgAR4HqNXG1ge0wlHsxL2RjstrAU9+XEzEvZGOyaODr/GMHGncdtTELjoRALBpQn5YQwcPznaQS4dAApCL5EpoMsCAvvLjdQu8Rc4jcCzeHRQOX39cbDb6/Xindx5v7z47DgHxPHn7F3rjjIE/CooFJpyk4DIzUTFUNvDy+dcAdGv+6DuRr9DIDspZra0BvGP/JsGw8Vp5kzMuulG/olagd2ile0RpAZIBvNqAehqEcp16CepkF7JrrtwbGv2hyjCVaIG1cKqpTLg0hzlBHjVqwBiTWIodBrW9JbzIQ3fOm8Y21HA5NdZyBixq1YA3QzEJBzfDK0VweezBBH6A3atTAGkDgiwTIBfeuHJFOzD1wAvuyiVkDamSIBeNb74g6IB5OuTT1Ro0edhLhBWuAJqCmuBAuatQgc3EGzR1nzhpAEOKiv3CY0HyMVQP5jeNwLW+ZrRpwR9xix7nZzK0y0Pos+ZirqwbcMbfIcS2zVQNusfu4HedmM1c1wOKMvER17qOWNherBuYGW/la3w8AAAD//7bCmZIAAAAGSURBVAMA+EkGULfKFRsAAAAASUVORK5CYII=" },
+            { series: 4, indexNumber: 93, name: "Battle Fennec", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#ffc20e", "#464646", "#00e5ed", "#b32fbd", "#c7770e", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACAUlEQVR4AeyVLVIDQRCFOxwgBoHgEsioGKqCoHIAJAeIjkFi0BwAicRQVBEZA5ZDIBCYXCDMN5W3TIZudreKKsxSvMyb1697HvsTDuyff4YAwxUYrkCvK7Bdj7cvy/E2enOp4Ynqnt4rwGi6GU3OzTjIAzU83kGR1isAQziAgzxQw9MHvQM0w6ebhlrJv9VOLAwwm822QjPp/TNrZ9cTs/W4keFo+C15VGAvSKvXMMBqtRrJXA9ZfCyNA1WHo2lf+8tZ8mgNA8jgrfOnE1vd3dvj4iEDjuZ527QwAH8FyZ+vXvdmcBjC7PLC5m+nGXA01eCAXmYwi72HMACNamAQsOPDfFs4MNVVNjhaFpIHL8j79JHquS/RH79hAJwk5/7C+7xi8tLLDPoj/BpATQwS5yrwwKXBjQRHoyZxr0eis4YB0lD3Kxf99ujGODBxA3C0xMMe5+wshQFydfdR3kPdWw7clU1cNfSyh32EMADDBDXrHw06Gk89gEuTRxo6YO/BDcAQHiSgJjRx1nJoyamVXmaAUsMjuAHKBjhmHioAB1lPrxwPXuaICXhAoiadw8XRS7gBMEQNDPdqaNTorUGt1rQPA8jAWj/d9b6rB1+NTgHqpr/cDwFar4B3v7vegi69rQG8w7xvOU/zemutNQCDa9RDtK997FWL1tYAUWNXvc33BQAA//+8RcI4AAAABklEQVQDAGXSElAnCKwmAAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 94, name: "Killer Hound", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#ffb330", "#006875", "#fff45e", "#fafafa", "#fa1e1e"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACJklEQVR4AeyWMU7cUBCGnyPRpUqTW0S5QoooRcQVUqVAShtOAS2Sa66AqLgBFdegoaKCwsw36/HOm523tldICAm0//O8f/6Z+ffZRvupvPHfh4H3dwLD1fcBxEcHDkR+br/6BLrju46mDPOAsxzxUqw2QGMGPf97IFQQw+lm5XKQAWYcXXzhovCxEiuWgwxw9HFGxkVNtj/IQPnxrTz/up36aSzcRKwIVhsYHv8M9D96+qsmGE4MZznipdhv4OR0KBGuM4OBo8qOnvpKUG/aBhqF3f+vUwdiYISPjdNroxe5tgGyAcP5vTIMArqRhRhIWExDvAS5ARz3Z10RDL9vCrBm1YD+rIjGUtVwaoDktY/emkm5DXIDvQwXTfVqjZzQm08vwzdRZUKpflNPPPVwHLwhN0CWU+AqsP9y3efLzo5a6J0POTQkrIa49e3JtQ1Itrv+WYCEu5+T0y3n4y2rtc36UbfXwKipL/4oGQxM4XPGzVxzA+74tT7s9eHSxHbZ4UJN6zbkBuSb0NDDRtlDRW7i5E0htpzGwqEx6NtAIiA3MIp4kMC4LX6AcmI0NvYaaoFqG0vTAIXWjJh6Hiig8fHmh4mPyQHP0cPq4SOaBhBWhfGeImjBaaseiX6vgUSvVNY041Q8sywz4L6R9ot7yMjFPZoEywwkha9FvQMDC48yPZEFtYedAO9/nJhxUZPs5w3QOCJppFTUsddEe5k30K5dlJkTvQAAAP//MUWkJwAAAAZJREFUAwBhyPhBd/omQwAAAABJRU5ErkJggg==" },
+            { series: 4, indexNumber: 95, name: "Dragon Seahorn", weapon: "silver", type: "sea", hasSpecialHand: 0, colorScheme: ["#664f45", "#7bc200", "#ba3d67", "#006875", "#e6e6e6"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACDklEQVR4AeyVPU4DMRSEDUdA4gIcBCpoaejp+KkRFU2aVIgaQkdPQ50KuAcXQOIKwZ/FRCPr2btJCpogZj1+837G3pWym/75b2tgewMb3cDdR1qATb7jtQ1cnB4vvh+OE4Cva2ItAxq4fzNPgOGKwVfB6gaubhcayukBA0ssa/BVsLqBp/sdBpz9HKTJ40sBnFj60wof+QgNjPmwXve+liOcL4MVafUMDVCrAlbB4/DJ9XkCcECeVjjQnjVCaGB6mMo1q4EK2R/dXZYt79xBEI0cuKC9eiquNTQgMVrfp7MoXGI9rSQEj6YBOeYrB6rllOI5JwHtXaMGoOWccqPwGk0DJKqBc50yNyVcIC4tqiuJwaNrwPOf3+blFH5K1+HSlEtsCE0DfDx8ZN4gn3Tn5HNWjGR9KYmjkbMUMqFH1heZhv9NA8qmAdDem2WeQKRRA6S11kEDFPqpeL+AuIMYUMxrFIvW0EA+VXhl/oPjw5x7jg9s9QwN0NChRmOu1HO8B1x9fA0NkMCXDOBAJ9AANK4ZwMmRplxiaAAeoWlAV0mxN6SJBsGFOkYNtejqBa8RGqAQ1Mnac2pxrVFMGr2A9r6GBjwBXjfndMQddayu8VznowzUzb1Bi4+tGWUgGuIDnEe5vVjXAI1Br0FPoxb0croGxr7H3oChHl0DNKZBC+igpRNH72HQQK94jDaU8wsAAP//xRTcWgAAAAZJREFUAwAwswpQENVq+AAAAABJRU5ErkJggg==" },
+            { series: 4, indexNumber: 96, name: "Strong Hurricane", weapon: "silver", type: "air", hasSpecialHand: 0, colorScheme: ["#9c5a3c", "#c9cf25", "#00b7ef", "#fff9f0", "#f5e49c"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACF0lEQVR4AeyUPy5FYRDF77MJNqBUKNCo1DZAIiFsgUWwBULFAliChkYh0dgAq3ju74vzckzm++59r6EgOW9mzpw539x/lrpf/vtf4O/fgcv97emir8mY2b9/Bxa9+rFzzTugW6iIqXKiw3ueo6GuoblANnRy+zjJTOHoZTMtbvQCHCCj4+uH7uTgXmXJ4US4VlwtVhcYMpnuTLq988MC8toB8C2v6gIMrp1+EgrIn15WZ5/k1dFu4fnxHA1aeOA5dURzgdeL5Q4DoEEOeH7bKOXd2U0HKODokQNmAB7UNTQXwKA2SM/R0tV68NUFeKPZHiAUtj6elXZb6+8FIrwHxyzAizpDdQHEGsQEwAkcnuVwaAG5PMgzpAvoWca3F9Onlc3Mp3D00JTi+0ce8vymZyFdoL+6CQN6xlL71fR90Z3nrtF835/iORuwJF2AAdOUL0HGbtTrfhyuHloOd49eO/uEnU8XkJELPY+3mV7GwQs1z3QBDREZBORAz5Q8wnvMgKiJdXUBrgi4qef0ZOa5a8jpAWljTBdgkOcINACnfCi6Fg/gnM+nCyDQAMPUEfDcYkAe+9Ti5QUXkS7AIHCx155L45zn9KkBeUS6QBSp5tMCqmOkByLfqudaoGW0aG/0Av6PxHMd7Jzn6tfiqAXmMdRBY2cGF8iMePN1kGLGZbPSKw4ugHGEhmOMOuqoifXgAnFg3npI/wUAAP//xObOOgAAAAZJREFUAwAb0y5Q3tloQQAAAABJRU5ErkJggg==" },
+            { series: 4, indexNumber: 97, name: "Sea Panic", weapon: "silver", type: "sea", hasSpecialHand: 0, colorScheme: ["#b4b4b4", "#c9cf25", "#2aa882", "#fff200", "#990030"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACHUlEQVR4AeyUMU4sQQxEG+5AtCFakUICl5gDkBBwBC5ARE5MRMAV5hKQkCGhFSERh1jmjbaQ19jdLUBCSHypvt3lctnTs8xu+eV//wukNzCO47rn7fToapp0AYbXGqmBHh2aDOkCwzDs0KQh5IAzILeAA57jLC9yj3QBL+R8Uw6br6VHg5eQLqCn2VtcFOWL8Up9aZSGHnoRkhMjhAuoQQaKkUHGqUdRnl4fLhC9s/vH5Vpm3sSe0aC1HHnkCR8uQCFqOH8+KwygHoEaGl+LvKRJF0Dw9npdALkFgyJYDTm9gDxDdQE1YcKT3R7ciZrjydGqgPmw+Q8NWno2VDWkC/AeeUq6ucKn08v5u4A5nB2sXDW09KDDAy/yCOECtgEDNTKAJ9TZR2poxNte66k6MVyAQgSeTPxkqLTY3Go+BJWkucB0vfPV4zEN2voSTuet4V5je6lFCBfgByTYDwiG8JERHDU05IBeOAHOI1wAET8iQC5gSI4h0UKcNKrhAXT2MV1ARlmzBmJoc86CeuUl3sZwARqBFU7v+9OnmOsGVscvH63l8AKWUx4uoKKiNWQAvDVUrhp128M5Q9cCx/urAmSigToTLYcWwLfQtUDL5Dv1rgUeXpYFaFB0vZZDC6SvxeYC1rhmFNV6epsLRMY/yf3NBfzfPjcScfAtVG8ge4cRH3EMz3hqoLoAT5WBZotMB291Pq8u4MVfObd63gEAAP//byylQgAAAAZJREFUAwAE/ihQsGxdvQAAAABJRU5ErkJggg==" },
+            { series: 4, indexNumber: 98, name: "Puzzlecolor", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#84d916", "#006cfa", "#fff9bd", "#d60000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACIklEQVR4AeyVPU4DMRCFvRRwg1QUdBGHoOIGdNwBKkpShpIK7kDHDVJxCJSOgio3CE3wN9kxs45n1wlIKFIQbz1+8/c861WOwj//HQQcJrC/E5jORyv9gKytXO260wRoeH/2EliB2rVNbdxOAq7Gi/DwcS11aI4NJ8SWj34BN19pzLbu63xkt2KXOHE4NcQXH/0Cno+bQAEQg/lfLWcdUZweXmDiUh41xFl+lAVoIV3JjTbN308uA2OHspg8fa63MU6ar3ch2fDKmbUsANVOwvlyJumIsIBcPb4FgN0BtajZIdebsgB8TgITwA2aOA2ArY2buwu2XTi1CPIF4I2J09vToOB96wS0MWFq01xjdQ2xBjEeegXwjdvEyXjR2H1uM4U8Jq+R5/QK4GIltM3jaUVEvJCpltrqQ0TK08uZoruGL4CLo7F2jJFn1LhoDLCFiz5sQZYjXOHhC7DBtnDLS8OC3VI/n18iyoYvIJ5ALxKrpmMD9ogA2HAAG2Ar+i6iK4DLI++yffdS1P4Cxq8DDtCIFZDHCjTfcvAWrgCCNJFC7DcQp+SdTnO0xkZuS7gCKADaOHmn3GzdW1/H5tabO4MPaF6+ugLyQD0pIkDuhwPCMxkxhh/1AsyppKzdWxtnvodzUC/AKfBbencBdszW3lJRnYDSSC1nbRVQ4tRn1joBJuGvzWEBlScpCqvIHRbA+/WgXT0/vMY467AAJ7GWHor7BgAA//9e1pDQAAAABklEQVQDAJHnDVDB9gQzAAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 99, name: "Mantfrenzy", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#fafafa", "#005080", "#fff200", "#fff9bd", "#d60000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACFklEQVR4AeyVO3LbYAyEf2YmSpd75BCpcgFXSZeDpFKVg6RMxQu48iF8FsuFjA/mcsBfgCjKnvF4xhouASxey5f9qb3x70PA+7sDh8PhKOj1UYwVd6nddAf6BcQgLuvjmMv8TQI04PPxrmVQfou9SgAL7r/8wDii78SG09UCvj3czmuiP5MXOlcJeBy+n4zPuJOihFgXcLM/NmDNu59/m2Dh4hCP9QQ9wIP6dF5AHDD5x397nzb8unPLSb5yEkxu4TuxPNUCpoWxnAXD72cB8CwG+IAcNfgLJLOUrwWM++Hw/08TaGABdsZoYsBMtKYa9WHbuB9a8asF9A02ZHF1oy1XTfC9ZqwXqkW2FBD/ou12O7+C4Wsbzl0NOa+x6eoxt8VZxBGlAN5mITY0Pc+bcAfkKzc1qB87USemFLCo1GBZJVkMFGNVIwt3BrmAqtmerb9UxUDPWU2aLmbmAuIEBgLj9Cx9kcXxEKeaRg+IRYmfCmDYDPv/n/T55ymeWvnRIoacEHPyUwEkeYsBvsNuIS8TIPYcV2hw30hyoFmthX6QAx4kp1IA6qnPmn0JyYCUmz5fzQrls5sKYCmYq17oMAtkY1IBWeGCs9u+iAkyDn4FlwkIz9Tn9TFkz/UxNQkuE5A0vhZ1vYB4hdHfqGxdwAuGx8+x0rUuoOqML130q/qCXxfA8Az9wKwGrq/r4nUBXcPWcK3+CQAA//8bDGgmAAAABklEQVQDAHdLBFAzQgWaAAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 100, name: "Scope Cougar", weapon: "silver", type: "land", hasSpecialHand: 0, colorScheme: ["#ffc20e", "#0b318a", "#ffea00", "#94b6f2", "#fafafa", "#ff0000", "#7d3416"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACFElEQVR4AeyVMUsDQRCFN4IgKFbib7AVLKxsBf+KhWCRSlKIVQrBwh9jm8pCsPVHWIUIgkXc7/Qdk2Vm73IIIii+zOybmbdvc5tkI/3y37+Bv/kOLGe7y/LqeFzZ460HvwNsaOGJ9+GGGTiYpwT67NDRM8xAFr1/MiZOcp65If+DDZwf7ab0ksGus+9IviaqBrYPp0sBXZtPzvahGkwut5po68qJTTF4CQ2Ug6wXD+ME0Lq+fU8fx68NyLkT1AC99AjlWjwxNECxinwJNx/3EmDzam+lGBp4ex6PKnNp53Sadi6uvpDzWm9NKzSAIIOLu5skwAE2J+Z6AuTiyNVPzPXqQaoG+KJBUBjtp1YsC4tuTUDYHtalBpxFaKC8OKOTebN5uYEVU029qpVa4omhAYrtM87PmjWQWI4sGyjPsf2N8Gab5uLFNWCFiv6VZe5LYIUMFrmvNWdbXAO2gTw/7+btJ+diAXILOCDOzojzomsgGi4vFF86wAqXPapFmq4BRDiNIBEbqfHRA+S2phxeQFO8ja4BGrjJgFzQxWJNjVMBcjhbZw2oAXIPoQE51nB0iTxR9WpWWl6va4BB4A3AeTWPoxdQA+QlXANlU7nWCS3vcbYe5b0MDBHvO9PLQOT+J/jBBuwJbb6uqcEG1t0o6u80EJ2Oz79EbS6OGM1SEzoNIO5BAopeD5zqUew0EA325bv6PgEAAP//Pk4xtQAAAAZJREFUAwC3zgxQaii4/wAAAABJRU5ErkJggg==" },
+
+            { series: 4, indexNumber: 101, name: "Skull Grotess", weapon: "gold", type: "air", hasSpecialHand: 0, colorScheme: ["#008f83", "#ffea00", "#fff9bd", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACLklEQVR4AcSVzXXbMBCEwVzSgRtKGalCBfjkAnxLBykj1xTjDnJi8K0w0GoJYCnb71lPA+zv7ICkxG/liz/vFrD/+7NLu7cVO7u/SwADt+8/Ng3BJib/kf20gP2t9BNnAx6pTQVABran0k+MAH9ib5Ojlh6Av0IqYNa8/frbU97uwZPGUsDsBH3g68teQB3WY9X23xmHapYCVHTYL893t8Pyo5gl1stUQKZ8vzx3Zm/3oDNWXFMBrt/MSLK9vlicRbZqtJPLMBSwIiAHIrHFnmL05lv+5nZrKKBng2Ekbcj+090Cbz/wfwH9UsD2+3aZKTa82WoLIoA5LC6HC4YcJBqWAqg5ELQrYLlq1z8dzCuqfzWu66H3Gr5bUwFU3xG1U/rB3W65Qw+BCZYC7i7vhCALZxxLAZBDAOopN0AM1AeSzeBtagA9wAoWSypg0VsYDFY1WW4ogBP4Rvl1WPpKVo16xBN9xYcCeMHw4AkqhoSY/LiTo0Zx8+tPmR1Oxf0+FkDFpb5wALagN18lVUi7DcFpNZgGOIA5x2UuQERqlt84+sDqe7u6pZ920ms1bRkLoBG0IggPT3TNc7lBqbZK2a3WCyYPSAaMBYQiI6wx7XFgTRXFVKPdcoslFaCnWhwQxxg5YuSwBWKyZ3sqYNb4WfFUgN3jMO0jsUBVUgE0jAYSX+FszykB8V5GHyExFn1qRkgFnCUakZ/pTQVwKUeIA0c1xGJd9FMBseFRP6v/DwAA//9J4Rc2AAAABklEQVQDAJq27EFWXCXqAAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 102, name: "King Buster", weapon: "gold", type: "land", hasSpecialHand: 0, colorScheme: ["#b4b4b4", "#004eb5", "#ffe100", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB/0lEQVR4AexV0U3FMAxMWYQJmKQVY/DHNPwxxlM7CRMwSfCZXHFT262KEEIC9WrHPl+uVfq4K7/892/g776BeZ6rxdWjdOkNYON+Q6/Wc7z1JQOe0NXaOQOPS7UbjNNkl5rvat2MkpzbsQEI3cbBzi7zbJea72qYwax241tugAKMsc6+wxnGPUMruQGh1JexAEWE6nupgJTdCz1AuZxzmV/F1IBu3Lg2b6UwWK7NvYHUQD8wPC9aGh+cQ9hq5CjxxC01sLzNhei1ptehWPR9ziH2PbtODVjicF/0S9g84W0sBWhE9sht5TScMjBNk26+UTIbWxPkuDNsmhgbkFPPV7zyb/J7IOCTrnVJtCY9MbOaXedFC1+G0HZXbMBSIWDXyB8/DyRSEdeQ3mDO0YkNYICKNrciMAGQt+1V+zaUYnW0UIprAP/ZFE+1zILG1YA1gAW+cQA5agByhWxmNZBrvbu5BsDBIQKQE5EI+4g9BxoAeh5CAxTiMNcUwdPi4AHIWUckN5oFh3ANYBAgiYJcI6KPjQHkqFnYGfQB22fuGmAzip6YV4vmbf2UAX7PjFbA5uwz2l6UnzKwG7afG5tejb0kXjPQBK++9jau4djAwZOlJg5m4SA3EAnIjwyGN/BqIEQa6AlyA0L46Ss3gKfyELnyuKhFfKnnBoTw3eto/gMAAP//2i8F1QAAAAZJREFUAwDSEf5BrD9uDgAAAABJRU5ErkJggg==" },
+            { series: 4, indexNumber: 103, name: "Slag King", weapon: "gold", type: "air", hasSpecialHand: 1, colorScheme: ["#b4b4b4", "#4f801c", "#fff673", "#ff7e00", "#a3264f"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACB0lEQVR4AeyVPU7DQBCFN7kBfY7BMSKRjhNEoqagTk1BjZQT0AXJx+AY6bkBYT8rzxpWO7P+KWiC9Dyz8+bNPNtg1umff24GFj+BrusuS97iYgNLlqMNDejuFBGMhTSKni40sN1uV9GAiGMhPDPIPYQGPBF1hhOBzTlPQWhAg49fT0m5hn8/H5Umm1OkF41yoofQACIGnX7OichgauDubU/oYXN66JWmbwgurgEGodvfv6fdepM0UHW4EnBajgYtPdSJNbgGymYGUmPBw2FzIXIG5LamXrgWmgYYboecXh6HIxxQwXLULMe5htBAbcDu9aOfY5cpF9c3XC+1GVeqD6EB3qHQd+eLXfZ5OCegxeJyW5KOyNlDaMCKGJSXrbQs5wOtHC7nK3oHspG4BsovmM4s8GaKU6/6yrPqRNcApFAbkH/rRSebq1jTiLNxlAEryMuGf785/7M8nwcOjUzM+g5Ykc2j91tyVmdzzAnhE+AOgJo1pFwEr5p6qAHpiSUHHxqQADHNJfg8g7Kus6cTT3QNIAY0AZkhB9wxn1xATk2wveSao6g+omsAMgLD+LMD5F5vxKGZZaA2tFZjQQuzDPBYy8G1WtlTO482MOUOp/SONmDd1xbUalbj5aMNTHnEU3qbBhgG7B1wBqqRA52JnAF5hKYBHq0HDfZ46urxYtOAJxxbb/X9AgAA//8sTZZDAAAABklEQVQDALqjLFBNyRzzAAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 104, name: "Jeerer Monkey", weapon: "gold", type: "land", hasSpecialHand: 1, colorScheme: ["#ffae00", "#565c2d", "#23b08f", "#fff27a", "#ffe8bf", "#a32751"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACO0lEQVR4AeyTPUolURSET7uA2cRMKgxMMpiIYCqIiCZGhgaCqQswFQwMjUwUEcFUEBMzI1PdhBto73exHsV9t/9MRFCsd6rr/FX37V6IL/77MfDzBL7nE2ivo63hMx/U5CfAYi36s3AcQNeekzYUJxvIA5fuIxJe/v8NAM/IyWk/kw00G9HE40qcL5/MNmWetJybqePIZAMau/OwLxrOZ+JIMsrA1s5iy7zfN8etONclyFGDDicOodcAQwBDiP+uzqCxfb0YHIMjaylLDbWJBhHAu9Br4PL8ufHGp83d2WVeuHoYkZD5R8ZrkMoZaI5eA+Vnxd2p+eJ0LZpfRxlw6V6DVs5Ac/QaoPBi45kQ3InujoUsz4n0A0dLNKihFq5eeBcGDdCoQa/rB404egly1KDDiRxP33vQacAfnX/fDIy7o2jf0vmzISHzpOVcuuafHr+WCUVqQKcBkoBBRAeDt/duswmWw9G8Bq6jgINyOVrVAIW1gTQ48uJkxLWSlybIM58I5gzw6Dk/UJrwRpprGFPjpuYMMJTHDjDBNagNZhAg7/Ba514jXjXAU6AAE8TaEF/snHqgHnIAjQjgwpwBlgIV1GI5hJqahi505ecMqMEjzRyH4DnnyhPp8VwXH2WgbNYRuV7TPN/FJxnQV1E7Immq6VpY6qMNaDCxdrdo5FigCB/CKAN6ozWstqDUyh71lnHQAHfGSyUwoPaCSVMdkV7q+zBogLN1aFFtKDmvhdfqXBs04MWf4UM97wAAAP//nSjyiwAAAAZJREFUAwBqkh1QiGktfwAAAABJRU5ErkJggg==" },
+            { series: 4, indexNumber: 105, name: "Hornhead", weapon: "gold", type: "land", hasSpecialHand: 1, colorScheme: ["#b4b4b4", "#2f3699", "#af23c2", "#5e3a21", "#fff9bd", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACUklEQVR4AezSIY8UQRAF4FkSBAaDRCFROAQCh7rVSCwSDwm5kPADCArLb9hTOAQCh0KikBgMArHM16FI0emZqVuDYZO39brqVdWbnrky/ePffwPlG3h079YxsPTWoi4uafp8yUA/sD8b2uf6M80IJQPR+PbDl13wvCDzrAntWiwbiMERDbUYcIhaRLktlAwYGIsOh8Px4dPX0whqFtLqwbdQMmBIDNzv9+01nN3fSzcEj1poW3Hjr2wgz7Ho4v1hOntwrQGXy5oqP8mAq7Y8luBycb5M3DRw5+6bIxgqri1SowltcOclDA1oDLx8frP1OuPPXnxt54t3P1r0F1yNhlY+uDPI9Rga+PTx8Q6IYygO599uCw0WQzvMf7lmud45PZkFeI+hgRBpikGi/NVX36efT65PhmfIqdHQqolmyC1h1YB3qtGg/JWf3/gs7ckaHCKH0+rBYwY+wqqBvsHgyM1PFvSPCYmscd5CyUAe6mqXhuZa7lnSy68aMBAIIX/JM5dq6PixJX//6Y/XMOv+qpEMDRACQcZ87TvvFuRnzQS4HNA4g1uQY8J5hKEBQoMAD8STOBssQuZZoxaYjR77eWqLBjQQjJrkKzBj7enNGBqwFAgC/ZO5XhrAQyeGVi0gz5CYMTSQBSPeL6QZ5eQDjATP8SQDecBl+MhE2UB+l3HFeXnOZW3WjHjZQHzpa8OjFtrRwj5XNqDRgrXhajS0VZQNGJwX5CsP3msqJkoGLLDcQNGi/NXjcmqh0YNvoWTAgozR1yyXNfjWcvWSAcJTsdX3CwAA//9ZviSJAAAABklEQVQDAALIaVBcg+UHAAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 106, name: "Monkey Fighter", weapon: "gold", type: "land", hasSpecialHand: 0, colorScheme: ["#ffe8bf", "#094717", "#464646", "#ffc20e", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB+ElEQVR4AeyVO1LDQBBEV2R2QMoNSDkBhPYViOAgkFKch9BOqIKElFtASoBD4be4t6a2Zj9S4sRUtac1n57WSsZn4ch/JwOnE5h9Aov1xTi+nUfA577Lswx4C71cj6nJBrTo92GX9MVVS4UOMtlA0rz5CeHy5R/wVJhGJhvYbb6HuOLrNYb4ceCpFpN9H5MN6JiX97dpg7hqqdBBugwgLPC8r8erAKQPB9TUR1S9FpsGcqHl0yLpre+eA1DC1sjls+RyNA1ogDsE3OX78BnA5vEjADigRg/QXCt2GZDgdrsddJcsG/ZvP4CziBo9cM3Aa2ga8IRYyGIJw8npWtGbVU2xasA+Q91Z7aummnpZYjW4zlE0YAetIAIc9f53ABoBJxcvDh92xmodyikUDdBRO0IWshjA6fdQ06C/aoA3G9Ao2LthMfBq5JgF8BJcA6vVasS5oGG7XLk82h7NE9HMe7l2DVDgGQI4sMJcA146ALewvWgAW7e8aECOS8N2seVWXLPSsjVx1wCDQE159BZ6Oc2hBXRto2vANnjcuyMv583muW4DvEgMK8JzqKaY173rbgMM9wj39KAldBsoPUMJ2Tilt9sAXy3+qQC7zHJqgF6br/GmAV4uwNEKJUHVicyAUq/yTQMcpwcJKHo95FQvxaaB0mBvvtX3BwAA//9VFbUQAAAABklEQVQDAKYgFFCj6u32AAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 107, name: "Flying Dragon", weapon: "gold", type: "air", hasSpecialHand: 1, colorScheme: ["#ff9f0f", "#464646", "#fff200", "#cc10c6", "#04adb3"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACJElEQVR4AezUMW5TQRDG8TWCNhTcBXoK5wI0SDSIW1Cl4gJUVDRINFBRxScAbkNaisf7vfBJq931s+UgoUi2/PfMfDM7M16/5EH5z6/zAucbON/A/byBh1+/TZg+Pp7Axyn/Urob0DBoyGdDBv2+eRWpxE8uiZxlQ3Kx3QJJsA6xd+FQj26Bzetfm3bgdrudQH/+4T1THl18WqyP+MmphVzNqHe3gAN14eXnZ6QFTd/9vCrf3zwphsmBT5NTsxTPH3KzWd51z0X4+9Et4Mqw74Bzb59eMeX6y25BEI3fopeeaHPdAilI8fXLH5EWm0GGby5KAb/Mr+Rmd3nnbHotYvPRLWDbpqZohOgGGpyYT0usFoljR727BRQr9PtBDNput9tAPEIOapPXA7WWHDtcoH2QNFAMucsX2zLdiG7h0+RulVKcQeI6F40dLiCxj1ytgQaDrz45/rEMF3CNdYPEeZgyyGCojZaanJFbo1tAA2iINKLVjeQS1z4ttTnrAcV8W5N8TbeApAcG/FD/njR5g8GnhbrW4PmvZBPaJYYL5Bvsa9zqBkerh9MP0S2gEeqD9RO8NqDO5Yxv7ltDTzEbugWSWLNpXteMtOQNReLanrRA3eCu/lEL5GnOsDamt1obqxlx1AKjg/9KO7iA3xajgR5WjHLOYJSrtdUFNKivkg963YRPk4MYfDp/H6sLaOAgCz5qX4xa46PVxS2rC7TFp8SHzvwBAAD//6krdisAAAAGSURBVAMAawZIUA0D8ycAAAAASUVORK5CYII=" },
+            { series: 4, indexNumber: 108, name: "Kickback", weapon: "gold", type: "air", hasSpecialHand: 1, colorScheme: ["#a8e61d", "#2f3699", "#b300ad", "#fff200", "#08997c"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACP0lEQVR4AeyWP0o0URDE3xoZGBoJnkGjPYGpYKaZZnsGYcMFz7CZZoaCqSfYSM+wYOQBzMb5DRSUbb/5g4IGflDf666urql5zII75Zf//Qf4mzdw/3rY/PSnUfNMb+DiYDtjAdSC+MzrqGcG8Iwz+jQAA4Fl1VPPMbtpgLgYewWBB+r9jHzspU0DZNflBrvrZXP1eCmPQg0nwrXiMk9maQAGtQVmU9HnlQbgDYA/6OZsWcS9L1az29O7cr637UANhx4NWmoBDqj3Mw3gAjejPpqvG8DDpaOGA2jEey0unmkAv7Lrh1XBiJPl1Wa/PD8tKD8BjhkkWt+Bc096IQ0QrwtDFjiX87dyfLKm7U6vmaFhqJMaRE84kAaopXVeD8bEa9cwE2p8GoAlrlCgl8HLZjGjB21dADVo624mrfY5mWeoBpAZS26gq2znjDqo1gzSd9p5Fww+ohqAL9rF6t3Y59SaSQsHYg8nVANIwMkbAGp9XK0pbQfVmqEF3XDgv2oAN5OHrlgzHgyYi5MGTiE0g4tIA8hEBnGJHlN+94AaLoM85Bk1aQBE+pKpQWbA7x4wd0Rt9HJtGoAFTICLvUbD2wFqn3mNB6hp0gAYsACoMeAUxKvnjJx24AGaDNUALtbPC85reofPvHZNrEcF4JoxBBi0X/6XP1rFoQHsoB3CqABDJt+Zjw4w9o0IM0U7GICrFTAH2QOck54TfR96A7hBfEA0naL13d4APFRgSTUnvQNOgFfNSV9Db4Da0hR+SPsBAAD//9OwerIAAAAGSURBVAMAqcdsULDCyHsAAAAASUVORK5CYII=" },
+            { series: 4, indexNumber: 109, name: "Skybat", weapon: "gold", type: "air", hasSpecialHand: 1, colorScheme: ["#ffc20e", "#0b318a", "#00ff99", "#9c5a3c", "#fff9bd", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACRUlEQVR4AeyVv04VQRTGZ201PIqJlY3yCCa2dsZCOzorExsrrewggWfgHeioSGh4DwL1Mr9z91vOHebM7AKBBrLfzPl/vjM7y32VnvnvhUDzBMaTnfGhb6hXo0lg2L0cKADWEiEHUKOV2yTQSnws32ICTENT7cgl5NNe+mt6k0C10PvjhB2oIDJI2SebdrNLqexNAmX8XGxqdPjlwwgsbrLNMWbsLyGBsNDp503VqaEpkuUz4+0S1sohIYHse5KnSsAzfrP3K5UwZnnabz/OE0hZxlbGoWMHvia6UCUgJ/vV/z8JIK8BOaCX0yWgAr7Y0dffKe1eymWy2SaLj51M4baYgCpcn/0cTD7Zsc2WSZ59Zly2rCLgGxztv507eNnHzAENoUmg9n9c3/3exaf5ciLTQz5koVZDPvaQQJnodTXM0yZAIdmQfezrd39H9OHjP1x3UCVAApH6dNAlq5EaEydZPprqE7QLOR6EP+tVAhQtAYnSFumZ0GCNc8A8+fB9c3mzzT8hAU1MsGQmQwdZZjMUsk2rE7CAxhISIIepATLwk6HTGCADpiYGmX2LRPAamgQ0uUhIpxFNPGRTDD5IpODo8YOQAE0BQYDCfiIrjiPDy8QQm83bT0AkJLCdvdE0pYjRGOCVTTHYDMHRmy8viwjk92wXK8cvfrZygukp1iVAIT8VR0xiDd5HDrn3vgO+gS/s7S15aU73BGjCNOxrsDSnS6AspEtXI1P6ytxaTpcAt9ujVsTbfCyy99XkLoFa0hpbL/YGAAD//0qNOLwAAAAGSURBVAMAGJ8jUABCzUYAAAAASUVORK5CYII=" },
+            { series: 4, indexNumber: 110, name: "Grin Reefer", weapon: "gold", type: "sea", hasSpecialHand: 0, colorScheme: ["#25a87f", "#0b318a", "#fff200", "#b7ebda", "#ff0000"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACDElEQVR4AeyVoU4DQRCGtxhEsRg853kCBAkBh0A04T2KbCqp5CkqEGgcT4AHzxNQXfbb5L9M53Zvr1SQJiX8mdl/Zv75ud7So/DPPwcDhyew/0/gfDlb73KR9uMJ5P5KOMBfr0gu5DjVbBz0BJ6vHgKCFlaE3NbImYGvYZABRLzg52QOnWBzCN8LV8IgA7enzQgBhAF5s5wREpRTA5CaIe/DIAPji8X6/vo1CCwBEiYHqhOZUb0vVg1YoZ/3adK6OW6SGZYCFsJRVA+5neWcQ68BL3ByuQgsICLGYkAOZ2twwGvAWfQaOHtcBWH1MU3vAYskELkAdFYtciPNEVXPxaIBrpIGvibztBxhcTFXumEi8qlXMzRZLc4WWQM8tu+ncRDsgBZYTrmvaZ6Ipvps7BjwjV5U9RhbHeUxbnwvlGbbwZh0DESu/fUCFOxnGhcGAA9sjTPIacALHQOICP6z05k6Arz1gFyceuAAZ2oCnEXHAEVeIEAuIKRckbce6Kzoe9ECqtuYNSCB0hACPNqXt7sAyOFykIY0fU/HAAPAN/ImA3hFckEcEYhXRBPorNgxoEIpWnH/hWNrpXnPb23AC3gTvl4772ygtqBW/7OBeP/bfzo2ry309cEGdI+JXkRnaoK4Wqwa4PoAK8QSe/XI4WwPM8ByubxqgKuTgxfL9cD5Pn+uGvAD255r/b8AAAD///S0SXUAAAAGSURBVAMAVFwkUA0olB0AAAAASUVORK5CYII=" },
+            { series: 4, indexNumber: 111, name: "Salmomanther", weapon: "gold", type: "sea", hasSpecialHand: 0, colorScheme: ["#b4b4b4", "#00a8b8", "#fff200", "#e64077"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACDUlEQVR4AeyWzU3DQBCFbcQRUQC9IMEtQi7AJVAAEq1QQgqwUG50QBmpgCNS2G/iWY/X480mK8EFxPPOvpl589Ybfq6aP/76N1D9BoZhONTcYrWBmuH0VhmoPX2VATvcxoieg4vewP7hdXHvHldiZNVA7lSfL/cLbY/TopzWqgGapXG7OzQgEJwShND9JgckSU+AaAjhP1wD2tR9XU9dQUw3M34kZ5xTq5pjeVxcA2RnghAJbN7GSZlsc3nXgG0Ybr5FxD72bx+ypQ6wUY5YYXu1TnO6ugaaftMCFWAFd8+P2ndc+00T6o7x+KSGWgAla3/UY59iYcDe1cJ1EGIAmA3uNw0cCHxrh1gNq601CwNd17VSOH6QEFDQdHgKpyZwoDmtZ5WyoIUm2rI3j4UBk8uH292Ut/HEFkWuAXHah3uzEuO+fU8Gm+ExN9bG9rAXzUhMgWuANK+MD5AC7hxon6yZP9mrBhiGa0CsQFBj7hzo3ubg6AXEa8ga4C3QqCK6TwdRo5zWpD3UeFg1gACwTXyqAZwOtDE5AKdAA+g+XVcNpIXpHtH2tmkBcZov3ZcbCD/LKpqeEn7GmVpyOZQbyKlU5MoMeCeynI3VjMdpzqxlBkxDDMMvFzeOZFlwuQF7QhuXzY1Vpw1UiOu/cnGaE5w24DQJ9WtXwCAP4sI8vBo4U+KFl78BT83hTlE/AAAA//9Qb2a5AAAABklEQVQDAFOy+EF0vvvvAAAAAElFTkSuQmCC" },
+            { series: 4, indexNumber: 112, name: "Dino Gator", weapon: "gold", type: "land", hasSpecialHand: 0, colorScheme: ["#a8e61d", "#464646", "#ff5289", "#debb47", "#fff200"], b64: "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACK0lEQVR4AezVPW5UUQwF4BfqrAApBSXbAGlYApSIChbAKlgAVBElLIGRYBuUFJFYQfrhfUEeGY/fz7wUNIl0dI/tY/vcmxfl0fCffx4M3PsFdrvd4T6/xc0GLAbL48TPxSYDFr75/PO4C5c7Js4gmwyY//LyZrAYcLkt2Gzg6+3VcV/mx+RKsspAfV63rvNrrvZUfcSLBgza7/cXGnC4fv1U+A/k1EBBT3DxFBYNaDQI8E/v77wMFooheNRoQW0JswbqEAuefHw2OA22GHC5XJODOkMuY9YAod9t4O2Hw/Dr3Y/BqTY+8wC4XNRC71Sbw6yBboBFBsbizKMmF+hmRM3ZGuie7dXjm4tx6d8PQOcEaGhruZtJc2KA0BDn9fi1B4ghbjTWhXcIHjXJ6HOO9UPMVMs4MTAl1GSQMzDGA0TsHOP2n5O82TQZJwYUqzBipxvRwLfL5wPgoEaDx4lDjeWgNfDl99XBcwYIA3LBX9x+HyDiXJMTB8yUq2gNEPmQAA/EEEPl3B7wyIVGDswAvMOkgRg01Wyh2wPeDY/emNVpWgMaITf4iHKsbjHgudZpqyb0rYEo1tNHFjinVrU5XmWg3igGTN1KfapHLWOVgdyA5z+pMJFzNGuxysCW4Wt7Vhmoz1ljt625GtN0WGWga8wLMu+0c7lFA4b7U8swMD9x8KzB9dLOYdGAQXVALMz5Ltf15h580YCvvEJjh6oTd7qcWzSQxVv4Us8fAAAA//+IiHyGAAAABklEQVQDAATRRlB4AxpJAAAAAElFTkSuQmCC" },
+
+        ];
+
+        let sortingMethod = 0;
+
+        beasts.forEach((b, i) => b.colorIndex = colorToSortKey(b.colorScheme[0]));
+        beasts.forEach((b, i) => b.armorColorIndex = colorToSortKey(b.colorScheme[1]));
+
+        const beastsOriginal = [...beasts];
+
+        function sortByIndex() {
+            sortingMethod = 0;
+            beasts.sort(function (a, b) { return a.indexNumber - b.indexNumber });
+        }
+
+        function sortAlphabetically() {
+            sortingMethod = 2;
+            beasts.sort(function (a, b) {
+                var textA = a.name.toUpperCase();
+                var textB = b.name.toUpperCase();
+                return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+            });
+        }
+
+        function sortByColor() {
+            sortingMethod = 4;
+            beasts.sort((a, b) => {
+                const ai = beastsOriginal.indexOf(a);
+                const bi = beastsOriginal.indexOf(b);
+                if (a.colorIndex !== b.colorIndex) return a.colorIndex - b.colorIndex;
+                return ai - bi; // tasapelit alkuperäiseen järjestykseen
+            });
+        }
+
+        function sortByArmorColor() {
+            sortingMethod = 5;
+
+            beasts.sort((a, b) => {
+                const ai = beastsOriginal.indexOf(a);
+                const bi = beastsOriginal.indexOf(b);
+                if (a.armorColorIndex !== b.armorColorIndex) return a.armorColorIndex - b.armorColorIndex;
+                return ai - bi;
+            });
+        }
+
+        function sortByType() {
+            sortingMethod = 6;
+
+            beasts.sort(function (a, b) {
+                var textA = a.type.toUpperCase();
+                var textB = b.type.toUpperCase();
+                return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+            });
+
+        }
+
+        function sortByArm() {
+            sortingMethod = 7;
+
+            beasts.sort(function (a, b) {
+                const ai = a.hasSpecialHand;
+                const bi = b.hasSpecialHand;
+
+                if (a.hasSpecialHand !== b.hasSpecialHand) return b.hasSpecialHand - a.hasSpecialHand;
+                return ai - bi;
+            });
+
+        }
+
+        function sortRandom() {
+            sortingMethod = 8;
+            beasts.sort(() => Math.random() - 0.5);
+        }
+
+        let thresholds = [0.92, 0.97, 1.0];
+
+        function rng(seed, n) {
+            let x = Math.sin(seed * 9301 + n * 49297 + 233) * 93457;
+            return x - Math.floor(x);
+        }
+
+        function getDrawColorIndex(v, numColors) {
+            for (let t = 0; t < thresholds.length; t++) {
+                if (v <= thresholds[t]) return Math.min(t + 1, numColors - 1);
+            }
+            return 1;
+        }
+
+        function drawPlaceholder(canvas, seed, colors) {
+            const S = 16; canvas.width = S; canvas.height = S;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = colors[0] || '#4A4238';
+            ctx.fillRect(0, 0, S, S);
+            for (let y = 0; y < S; y++) for (let x = 0; x < S / 2; x++) {
+                const v = rng(seed, y * S + x);
+                const dist = Math.sqrt((x - S / 4) ** 2 + (y - S / 2) ** 2);
+                if (v > 0.36 + dist * 0.02) {
+                    const ci = getDrawColorIndex(v, colors.length);
+                    ctx.fillStyle = colors[ci] || '#888';
+                    ctx.fillRect(x, y, 1, 1);
+                    ctx.fillRect(S - 1 - x, y, 1, 1);
+                }
+            }
+            const eyeColor = colors[2] || colors[3] || colors[1];
+            const eyeY = Math.floor(S * 0.35), eyeX = Math.floor(S * 0.3);
+            ctx.fillStyle = eyeColor;
+            ctx.fillRect(eyeX, eyeY, 2, 2); ctx.fillRect(S - eyeX - 2, eyeY, 2, 2);
+            ctx.fillRect(eyeX, eyeY, 1, 1); ctx.fillRect(S - eyeX - 2, eyeY, 1, 1);
+        }
+
+        function drawWeapon(canvas, seed, colors) {
+            const S = 16; canvas.width = S; canvas.height = S;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#4A4238'; ctx.fillRect(0, 0, S, S);
+
+            // weapon placeholder
+            ctx.fillStyle = colors[1] || '#888';
+            for (let i = 0; i < 10; i++) ctx.fillRect(3 + i, 12 - i, 2, 2);
+            ctx.fillStyle = colors[0] || '#ccc';
+            for (let i = 0; i < 10; i++) ctx.fillRect(3 + i, 12 - i, 1, 1);
+
+        }
+
+        let globalMode = 'beast';
+        const cellStates = new Array(beasts.length).fill('beast');
+        const canvases = [];
+
+        async function redrawCell(i) {
+            if (!canvases[i]) return;
+            const isWeapon = cellStates[i] === 'weapon';
+            if (isWeapon) {
+
+                if (beasts[i].weapon == "gold") drawWeapon(canvases[i], beasts[i].indexNumber + 100, goldColors);
+                else if (beasts[i].weapon == "silver") drawWeapon(canvases[i], beasts[i].indexNumber + 100, silverColors);
+                else if (beasts[i].weapon == "bronze") drawWeapon(canvases[i], beasts[i].indexNumber + 100, bronzeColors);
+                else if (beasts[i].weapon == "purple") drawWeapon(canvases[i], beasts[i].indexNumber + 100, purpleColors);
+                else drawWeapon(canvases[i], beasts[i].indexNumber + 100, beasts[i].colorScheme);
+
+            } else {
+                if (canvases[i]._beastB64) {
+                    await restoreBeast(canvases[i]);
+                } else {
+                    drawPlaceholder(canvases[i], beasts[i].indexNumber, beasts[i].colorScheme);
+                }
+            }
+            const label = canvases[i].parentElement.querySelector('.label');
+            if (label) label.textContent = isWeapon
+                ? `${beasts[i].indexNumber}. Weapon: ${beasts[i].weapon}`
+                : `${beasts[i].indexNumber}. ${beasts[i].name}`;
+        }
+
+        async function redrawAll() { for (let i = 0; i < beasts.length; i++) await redrawCell(i); }
+
+        async function toggleCell(i) {
+            cellStates[i] = cellStates[i] === 'beast' ? 'weapon' : 'beast';
+            await redrawCell(i);
+            const allW = cellStates.every(s => s === 'weapon');
+            const allB = cellStates.every(s => s === 'beast');
+            const btn = document.getElementById('toggle-btn');
+            const badge = document.getElementById('mode-badge');
+            if (allW) { globalMode = 'weapon'; btn.textContent = 'show all beasts'; btn.classList.add('active'); badge.textContent = 'weapon mode'; }
+            else { globalMode = 'beast'; btn.textContent = 'show all weapons'; btn.classList.remove('active'); badge.textContent = allB ? 'beast mode' : 'mixed'; }
+        }
+
+        function hexToRgb(hex) {
+            const n = parseInt(hex.replace('#', ''), 16);
+            return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+        }
+
+        function applyPaletteSwap(srcCanvas, fromColors, toColors) {
+            const dst = document.createElement('canvas');
+            dst.width = 32; dst.height = 32;
+            const ctx = dst.getContext('2d');
+            const id = srcCanvas.getContext('2d').getImageData(0, 0, 32, 32);
+            const d = id.data;
+            for (let i = 0; i < d.length; i += 4) {
+                if (d[i + 3] === 0) continue;
+                for (let j = 0; j < fromColors.length; j++) {
+                    const [r, g, b] = hexToRgb(fromColors[j]);
+                    if (Math.abs(d[i] - r) < 20 && Math.abs(d[i + 1] - g) < 20 && Math.abs(d[i + 2] - b) < 20) {
+                        const [tr, tg, tb] = hexToRgb(toColors[j] ?? fromColors[j]);
+                        d[i] = tr; d[i + 1] = tg; d[i + 2] = tb;
+                        break;
+                    }
+                }
+            }
+            ctx.putImageData(id, 0, 0);
+            return dst;
+        }
+
+        async function renderBeast(canvas, b64, emblemColor) {
+            const img = await loadImage(b64);
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(img, 0, 0);
+
+            // Vaihda tarran väri
+            const id = ctx.getImageData(0, 0, 32, 32);
+            const d = id.data;
+
+            const [tr, tg, tb] = hexToRgb(emblemColor);
+
+            for (let i = 0; i < d.length; i += 4) {
+                if (d[i] === 0 && d[i + 1] === 0 && d[i + 2] === 0 && d[i + 3] === 255) {
+
+                    const lighter = Math.random() > 0.55;
+                    const factor = lighter ? 1.2 : 1.0;
+                    d[i] = Math.min(255, tr * factor);
+                    d[i + 1] = Math.min(255, tg * factor);
+                    d[i + 2] = Math.min(255, tb * factor);
+
+                }
+            }
+            ctx.putImageData(id, 0, 0);
+            canvas._beastB64 = b64;
+        }
+
+        async function restoreBeast(canvas) {
+            const i = canvases.indexOf(canvas);
+            const b = beasts[i];
+            if (!canvas._beastB64) {
+                // Placeholder-hahmot: piirretään uudelleen currentColors:lla
+                if (b && b.currentColors) drawPlaceholder(canvas, b.indexNumber, b.currentColors);
+                return;
+            }
+            const img = await loadImage(canvas._beastB64);
+            const tmp = document.createElement('canvas');
+            tmp.width = 32; tmp.height = 32;
+            tmp.getContext('2d').drawImage(img, 0, 0);
+
+            const src = (b.colorScheme && b.currentColors)
+                ? applyPaletteSwap(tmp, b.colorScheme, b.currentColors)
+                : tmp;
+
+            canvas.width = 32; canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(src, 0, 0);
+
+        }
+
+        async function createGrid() {
+            const grid = document.getElementById('grid');
+            let currentSeries = null;
+
+            for (let i = 0; i < beasts.length; i++) {
+                const b = beasts[i];
+
+
+                if (sortingMethod == 0 && b.series !== currentSeries) {
+                    currentSeries = b.series;
+                    const header = document.createElement('div');
+                    header.className = 'series-header';
+                    header.textContent = `Series ${b.series}`;
+                    grid.appendChild(header);
+                }
+
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.beastIndex = i;
+
+                cell.style.background = '#1a1111';
+                const wrap = document.createElement('div');
+                wrap.className = 'canvas-wrap';
+
+                const canvas = document.createElement('canvas');
+                canvases.push(canvas);
+
+                if (b.b64) {
+                    await renderBeast(canvas, b.b64, b.emblemColor);
+                } else {
+                    drawPlaceholder(canvas, b.indexNumber, b.colorScheme);
+                }
+
+                // Alustetaan currentColors colorScheme:ista jos saatavilla
+                if (b.colorScheme) b.currentColors = [...b.colorScheme];
+
+                const label = document.createElement('div');
+                label.className = 'label';
+                label.textContent = `${b.indexNumber}. ${b.name}`;
+
+                wrap.appendChild(canvas);
+                wrap.appendChild(label);
+                cell.appendChild(wrap);
+
+                // Värinvalitsimet hahmosta joilla on colorScheme ja b64
+                if (b.colorScheme && b.b64) {
+                    const swaps = document.createElement('div');
+                    swaps.className = 'color-swaps';
+                    b.colorScheme.forEach((origColor, ci) => {
+                        if (origColor.toLowerCase() === '#000000') return;
+                        const input = document.createElement('input');
+                        input.type = 'color';
+                        input.value = origColor;
+                        input.title = `Väri ${ci + 1}: ${origColor}`;
+                        input.addEventListener('mousedown', (e) => e.stopPropagation());
+                        input.addEventListener('input', async (e) => {
+                            b.currentColors[ci] = e.target.value;
+                            if (cellStates[i] === 'beast') await restoreBeast(canvas);
+                        });
+                        swaps.appendChild(input);
+                    });
+                    cell.appendChild(swaps);
+                }
+
+                wrap.addEventListener('mousedown', async (e) => {
+                    e.stopPropagation();
+                    cellStates[i] = 'weapon';
+
+                    if (beasts[i].weapon == "gold") drawWeapon(canvas, beasts[i].indexNumber + 100, goldColors);
+                    else if (beasts[i].weapon == "silver") drawWeapon(canvas, beasts[i].indexNumber + 100, silverColors);
+                    else if (beasts[i].weapon == "bronze") drawWeapon(canvas, beasts[i].indexNumber + 100, bronzeColors);
+                    else if (beasts[i].weapon == "purple") drawWeapon(canvas, beasts[i].indexNumber + 100, purpleColors);
+                    else drawWeapon(canvas, beasts[i].indexNumber + 100, beasts[i].colorScheme);
+
+                    const label = wrap.querySelector('.label');
+                    if (label) label.textContent = `${beasts[i].indexNumber}. Weapon: ${beasts[i].weapon}`
+
+                });
+
+                const restoreToBeast = async () => {
+                    if (cellStates[i] === 'weapon') {
+                        cellStates[i] = 'beast';
+                        if (canvas._beastB64) await restoreBeast(canvas);
+                        else drawPlaceholder(canvas, beasts[i].indexNumber, beasts[i].colorScheme);
+                        const label = wrap.querySelector('.label');
+                        if (label) label.textContent = `${beasts[i].indexNumber}. ${beasts[i].name}`;
+                    }
+                };
+
+                wrap.addEventListener('mouseup', restoreToBeast);
+                wrap.addEventListener('mouseleave', restoreToBeast);
+
+                cell.onclick = null;
+                grid.appendChild(cell);
+            }
+        }
+
+        const bronzeColors = ["#cc7d00", "#a56500"];
+        const silverColors = ["#ccccee", "#999999"];
+        const goldColors = ["#f0d100", "#999900"];
+        const purpleColors = ["#cc00cc", "#990099"];
+
+        function loadImage(b64) {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.src = "data:image/png;base64," + b64;
+            });
+        }
+
+        function makeCell(canvas, label, colors) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+
+            const wrap = document.createElement('div');
+            wrap.className = 'canvas-wrap';
+
+            const dst = document.createElement('canvas');
+            dst.imageSmoothingEnabled = false;
+            dst.width = 64;
+            dst.height = 64;
+
+            const ctx = dst.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(canvas, 0, 0, 64, 64);
+
+            wrap.appendChild(dst);
+            cell.appendChild(wrap);
+
+            const lbl = document.createElement('div');
+            lbl.className = 'cell-label';
+            lbl.textContent = label;
+            cell.appendChild(lbl);
+
+            if (colors) {
+                const dots = document.createElement('div');
+                dots.className = 'dots';
+                colors.forEach(c => {
+                    const dot = document.createElement('div');
+                    dot.className = 'dot';
+                    dot.style.background = c;
+                    dots.appendChild(dot);
+                });
+                cell.appendChild(dots);
+            }
+            return cell;
+        }
+
+        function colorToSortKey(hex) {
+            const n = parseInt(hex.replace('#', ''), 16);
+            const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            const d = max - min;
+            const saturation = max === 0 ? 0 : d / max;
+
+            if (saturation < 0.15) {
+                // Kirkkaus 0..1, palautetaan -1..-0 jotta harmaat tulevat ensin
+                const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+                return brightness - 1; // → tumma: -1, vaalea: -0.something
+            }
+
+            if (max === r) return ((g - b) / d + (g < b ? 6 : 0)) / 6;
+            if (max === g) return ((b - r) / d + 2) / 6;
+            return ((r - g) / d + 4) / 6;
+        }
+
+        async function setSorting(method) {
+            if (method === 0) sortByIndex();
+            else if (method === 1) {
+                sortByIndex();
+                beasts.reverse();
+            }
+
+            else if (method === 2) sortAlphabetically();
+            else if (method === 3) {
+                sortAlphabetically();
+                beasts.reverse();
+            }
+
+            else if (method === 4) sortByColor();
+            else if (method === 5) sortByArmorColor();
+            else if (method === 6) sortByType();
+            else if (method === 7) sortByArm();
+            else if (method === 8) sortRandom();
+            // Päivitä aktiivinen nappi
+            document.querySelectorAll('[id^="sort-"]').forEach((btn, i) => {
+                btn.classList.toggle('active', i === method);
+            });
+
+            // Tyhjennä ja uudelleenrenderöi gridi
+            canvases.length = 0;
+            cellStates.fill('beast');
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            await createGrid();
+        }
+
+        function setColumns(n) {
+            document.getElementById('grid').style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+            document.querySelectorAll('[id^="col-"]').forEach(btn => {
+                btn.classList.toggle('active', btn.id === `col-${n}`);
+            });
+        }
+
+        function calculateData() {
+            const total = beasts.length;
+            const statsDiv = document.getElementById('stats');
+
+            const types = ["air", "land", "sea"];
+            types.forEach(type => {
+                const pct = Math.round(beasts.filter(b => b.type === type).length / total * 100);
+                statsDiv.innerHTML += `<p>${pct}% ${type}</p>`;
+            });
+
+            statsDiv.innerHTML += `<p></br></p>`;
+
+            const stats = [
+                { label: "has special hand", key: "hasSpecialHand" },
+            ];
+
+            stats.forEach(({ label, key }) => {
+                const pct = Math.round(beasts.filter(b => b[key]).length / total * 100);
+                statsDiv.innerHTML += `<p>${pct}% ${label}</p>`;
+            });
+        }
+
+        const emblemColors = ['#200000', '#000020', '#002000']; // tuli, vesi, puu
+
+        // --- Global recolor ---
+
+        function buildRecolorSlots() {
+            let maxSlots = 0;
+            beasts.forEach(b => {
+                if (!b.colorScheme) return;
+                const nonBlack = b.colorScheme.filter(c => c.toLowerCase() !== '#000000');
+                if (nonBlack.length > maxSlots) maxSlots = nonBlack.length;
+            });
+
+            const container = document.getElementById('recolor-slots');
+            container.innerHTML = '';
+            container.style.cssText = 'display:flex;gap:4px;align-items:center;flex-wrap:wrap;';
+
+            for (let slotIdx = 0; slotIdx < maxSlots; slotIdx++) {
+                let currentColor = '#888888';
+                /*
+                for (const b of beasts) {
+                    if (!b.colorScheme || !b.currentColors) continue;
+                    const nonBlackCurr = b.currentColors.filter((_, i) => b.colorScheme[i]?.toLowerCase() !== '#000000');
+                    if (nonBlackCurr[slotIdx]) { currentColor = nonBlackCurr[slotIdx]; break; }
+                }
+                */
+
+                const uid = `grc-${slotIdx}`;
+
+                // Piilotettu color input, label toimii napinklikkauksena, lisätään asteriski
+                const colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.id = uid;
+                colorInput.value = currentColor;
+                colorInput.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
+                colorInput.addEventListener('input', (e) => {
+                    document.getElementById(`recolor-dot-${slotIdx}`).style.background = e.target.value;
+                    pendingRecolors[slotIdx] = e.target.value;
+                    const textNode = lbl.lastChild;
+                    if (textNode) {
+                        textNode.textContent = `color ${slotIdx}*`;
+
+                        if (slotIdx == 0) textNode.textContent = `skin *`;
+                        else if (slotIdx == 1) textNode.textContent = `armor *`;
+                        else textNode.textContent = `color ${slotIdx}*`;
+                    }
+                });
+
+                const lbl = document.createElement('label');
+                lbl.htmlFor = uid;
+                lbl.className = 'recolor-slot-btn';
+                lbl.style.cursor = 'pointer';
+
+                const dot = document.createElement('span');
+                dot.className = 'recolor-slot-dot';
+                dot.id = `recolor-dot-${slotIdx}`;
+                dot.style.background = currentColor;
+
+                lbl.appendChild(dot);
+                if (slotIdx == 0) lbl.appendChild(document.createTextNode(`skin `));
+                else if (slotIdx == 1) lbl.appendChild(document.createTextNode(`armor `));
+                else lbl.appendChild(document.createTextNode(`color ${slotIdx + 1}`));
+
+                container.appendChild(colorInput);
+                container.appendChild(lbl);
+            }
+        }
+
+        const pendingRecolors = {};
+
+        async function applyAllPendingRecolors() {
+            for (const [slotIdx, newColor] of Object.entries(pendingRecolors)) {
+                await applyGlobalRecolor(Number(slotIdx), newColor);
+            }
+            // Poista asteriskit
+            document.querySelectorAll('#recolor-slots label').forEach(lbl => {
+                const textNode = lbl.lastChild;
+                if (textNode && textNode.textContent.endsWith('*'))
+                    textNode.textContent = textNode.textContent.slice(0, -1);
+
+            });
+            Object.keys(pendingRecolors).forEach(k => delete pendingRecolors[k]);
+        }
+
+        async function applyGlobalRecolor(slotIdx, newColor) {
+            for (let i = 0; i < beasts.length; i++) {
+                const b = beasts[i];
+                if (!b.colorScheme || !b.currentColors) continue;
+
+                let nonBlackIdx = -1;
+                for (let j = 0; j < b.colorScheme.length; j++) {
+                    if (b.colorScheme[j].toLowerCase() === '#000000') continue;
+                    nonBlackIdx++;
+                    if (nonBlackIdx === slotIdx) {
+                        b.currentColors[j] = newColor;
+                        const cell = document.querySelector(`[data-beast-index="${i}"]`);
+                        if (cell) {
+                            const inputs = cell.querySelectorAll('.color-swaps input[type=color]');
+                            if (inputs[nonBlackIdx]) inputs[nonBlackIdx].value = newColor;
+                        }
+                        break;
+                    }
+                }
+
+                if (cellStates[i] === 'beast') await restoreBeast(canvases[i]);
+            }
+        }
+
+        async function resetGlobalColors() {
+            for (let i = 0; i < beasts.length; i++) {
+                const b = beasts[i];
+                if (!b.colorScheme) continue;
+                b.currentColors = [...b.colorScheme];
+                // Päivitä color inputit
+                const cell = document.querySelector(`[data-beast-index="${i}"]`);
+                if (cell) {
+                    const inputs = cell.querySelectorAll('.color-swaps input[type=color]');
+                    let ci = 0;
+                    b.colorScheme.forEach((c, j) => {
+                        if (c.toLowerCase() === '#000000') return;
+                        if (inputs[ci]) inputs[ci].value = c;
+                        ci++;
+                    });
+                }
+                if (cellStates[i] === 'beast') await restoreBeast(canvases[i]);
+            }
+            buildRecolorSlots();
+        }
+
+        async function init() {
+            beasts.forEach(b => b.emblemColor = emblemColors[Math.floor(Math.random() * 3)]);
+            await createGrid();
+        }
+
+        init().then(() => buildRecolorSlots());
+        calculateData();
 
     </script>
-  </body>
+</body>
 </html>
